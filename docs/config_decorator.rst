@@ -20,6 +20,13 @@ config\_decorator.key\_chained\_val module
    :undoc-members:
    :show-inheritance:
 
+config\_decorator.slug\_name\_util module
+-----------------------------------------
+
+.. automodule:: config_decorator.slug_name_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
