@@ -1200,7 +1200,7 @@ whoami:
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
-# Another optional, private Makefile to override any of the above,
+# Optional project and private Makefiles to override any of the above.
 # e.g., maybe you need to override EAPP's poetry-install --with list:
 #
 #   develop: editables editable
@@ -1209,6 +1209,12 @@ whoami:
 #           make_develop ...
 #   ...
 
+# Derived project Makefile.
+MAKEFILE_PROJECT_AFTER ?= Makefile.project.after
+
+-include $(MAKEFILE_PROJECT_AFTER)
+
+# Private user Makefile.
 MAKEFILE_LOCAL_AFTER ?= Makefile.local.after
 
 -include $(MAKEFILE_LOCAL_AFTER)
