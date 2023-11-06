@@ -4,7 +4,7 @@ LICENSE
 
 This software —
 ``config-decorator`` —
-is Copyright © 2019-2020 Landon Bouma.
+is Copyright © 2019-2023 Landon Bouma.
 All rights reserved.
 
 This software —
