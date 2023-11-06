@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-
-# This file exists within 'config-decorator':
-#
-#   https://github.com/hotoffthehamster/config-decorator
+# vim:tw=0:ts=4:sw=4:et:norl:ft=python:nospell
+# Author: Landon Bouma <https://tallybark.com/>
+# Project: https://github.com/<varies>
+# Pattern: https://github.com/doblabs/easy-as-pypi#🥧
+# License: MIT
 
 # Boilerplate documentation build configuration file,
 # (Originally) created by sphinx-quickstart on Tue Jul 9 22:26:36 2013
@@ -17,13 +18,13 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import datetime
+# import datetime
 import os
-import shlex
+# import shlex
 import sys
 from pkg_resources import get_distribution
 
-import sphinx_rtd_theme
+# import sphinx_rtd_theme
 
 # If extensions (or modules to document with autodoc) are in another
 # directory, add these directories to sys.path here. If the directory is
@@ -31,7 +32,7 @@ import sphinx_rtd_theme
 # absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
-# Get the project root dir, which is the parent dir of this
+# Get the project root dir (parent dir of docs/).
 cwd = os.getcwd()
 project_root = os.path.dirname(cwd)
 
@@ -40,26 +41,135 @@ project_root = os.path.dirname(cwd)
 # version is used.
 sys.path.insert(0, project_root)
 
+
+def get_meta() -> MutableMapping:
+    """Get project metadata from pyproject.toml file.
+
+    Returns:
+        MutableMapping
+    """
+    import tomli
+
+    # toml_path = os.path.join(os.path.dirname(__file__), "..", "pyproject.toml")
+    toml_path = os.path.join(project_root, "pyproject.toml")
+
+    with open(toml_path, 'rb') as fopen:
+        pyproject = tomli.load(fopen)
+
+    return pyproject
+
+
+meta = get_meta()
+# E.g., meta = {'tool': {'poetry': {
+#   'name': 'easy-as-pypi',
+#   'version': '1.0.0',
+#   'description': 'Bootstrapping your next Python CLI made easy as PyPI',
+#   'authors': ['Landon Bouma <doblabs@tallybark.com>'],
+#   'maintainers': ['Tally Bark LLC <doblabs@tallybark.com>'],
+#   'license': 'MIT',
+#   'readme': 'README.rst',
+#   'homepage': 'https://github.com/doblabs/easy-as-pypi',
+#   'repository': 'https://github.com/doblabs/easy-as-pypi',
+#   'documentation': 'https://easy-as-pypi.readthedocs.io/en/latest',
+#   ...
+
+# Determine the distributable package name.
+# - You could always set this explicitly, e.g.,
+#
+#     project_dist = 'pip-install-name'
+#
+#   but it's general probable, just be aware:
+#
+#   - On a dev machine, you might use the path:
+#       /home/user/.kit/py/easy-as-pypi/docs
+#     In which case the project name in encoded in the parent directory name.
+#   - Same with GitHub Actions, the parent name works:
+#       /home/runner/work/easy-as-pypi/easy-as-pypi/docs
+#   - But on RTD, the package name is further up the ancestry:
+#       /home/docs/checkouts/readthedocs.org/user_builds/easy-as-pypi/checkouts/latest/docs
+#     - Fortunately RTD declares an environ we can use.
+#
+#  try:
+#      project_dist = os.environ['READTHEDOCS_PROJECT']
+#  except KeyError:
+#      project_dist = os.path.basename(project_root)
+#
+# Though if we use pyproject.toml metadata, we don't need the RTD environ.
+project_dist = meta["tool"]["poetry"]["name"]
+
+# Usually the installable package name is the same name as the
+# kebab-case directory name converted to snake_case.
+# - If that's not the case for you, change this, e.g.,
+#
+#     package_name = 'python_import_name'
+package_name = project_dist.replace('-', '_')
+
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 # ┃                                                                     ┃
 # ┃ YOU/DEV: Customize this import and these strings for your project.  ┃
 
-project_dist = 'config-decorator'
-package_name = 'config_decorator'
-project_ghuser = 'hotoffthehamster'
+# Pull the GH org from the repository URL.
+# E.g., project_ghuser = 'doblabs'
+project_ghuser = os.path.basename(os.path.dirname(meta["tool"]["poetry"]["repository"]))
 project_ghrepo = project_dist
-project_texinfo = 'One line description of project.'
-project_docinfo = '{} Documentation'.format(project_dist)
-project_htmlhelp_basename = 'ConfigDecoratordoc'
-project_copy = 'Landon Bouma, HotOffThe Hamster, & contributors.'
-project_auth = 'Landon Bouma'
-project_orgn = 'HotOffThe Hamster'
 
+# E.g., project_auth = 'Landon Bouma <email>'
+project_auth = ",".join(meta["tool"]["poetry"]["authors"])
+# E.g., project_copy = '2020-2023, Landon Bouma <email>'
+project_copy = f"{meta['tool']['easy-as-pypi']['copyright_years']}, {project_auth}"
+
+# project_orgn = 'Tally Bark LLC'
+project_orgn = meta["tool"]["poetry"]["maintainers"]
+
+# ***
+
+# If you see "WARNING: duplicate label" messages, check if the
+# sphinx.ext.autosectionlabel is enabled — then disable it.
+# - As opposed to exclude files using exclude_patterns.
+#
+# List of patterns, relative to source directory, that match files and
+# directories to ignore when looking for source files.
 exclude_patterns = [
-    'CODE-OF-CONDUCT.rst',
-    'CONTRIBUTING.rst',
-    'README.rst',
+    '_build',
+    # Note that docs/readme.rst merely includes the top-level README.rst.
+    # - E.g., docs/readme.rst contains a single directive:
+    #     .. include:: ../README.rst
+    # - If we don't exclude that file here, you'll see a toctree warning:
+    #     checking consistency...
+    #       /path/to/easy-as-pypi/docs/readme.rst:
+    #         WARNING: document isn't included in any toctree
+    # - Note that README.rst is still included probably (to be honest,
+    #   I'm not really sure what's going on =).
+    'readme.rst',
 ]
+
+# ***
+
+# You can ignore these values unless you plan to generate other formats.
+
+# Used below by latex_documents, man_pages, and texinfo_documents,
+# none of which we generate from Sphinx sources.
+project_docinfo = '{} Documentation'.format(project_dist)
+
+# Option for HTMLHelp output, used by htmlhelp_basename below.
+# - This value seems like it'd be used for HTML output:
+#   - *Output file base name for HTML help builder. Default is 'pydoc'.*
+#     https://certik.github.io/sphinx/config.html
+#   But I don't see it used in the HTML docs under docs/_build, either
+#   as data, or as a "file base name". So, to me, looks unused.
+#   - See also: https://pypi.org/project/sphinxcontrib-htmlhelp/
+# - This value is usually (or at least what I've seen in examples)
+#   the PascalCase of the project (or package) name with "doc"
+#   appended, e.g., for a project named "my-python-project", then:
+#
+#     project_htmlhelp_basename = 'MyPythonProjectdoc'
+project_htmlhelp_basename = ''.join(
+    [word.capitalize() for word in project_dist.split('-')]
+) + 'doc'
+
+# Used by texinfo_documents, below, for Texinfo output.
+#  project_texinfo = 'One line description of project.'
+project_texinfo = meta["tool"]["poetry"]["description"]
 
 # ┃                                                                     ┃
 # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -75,17 +185,55 @@ exclude_patterns = [
 #   http://www.sphinx-doc.org/en/master/usage/extensions/index.html
 extensions = [
     'sphinx.ext.autodoc',
+
     # For hyperlinks, e.g., :ref:`My Section Title`.
-    'sphinx.ext.autosectionlabel',
+    # ISOFF/2023-05-22: I don't see any diff with this option on or off,
+    # when when autosectionlabel enabled, if the same reST header title
+    # is used in two separate files, you'll see warnings, e.g.,:
+    #   WARNING: duplicate label "title", other instance
+    #     in /path/to/easy-as-pypi/docs/<file>.rst
+    #
+    #  'sphinx.ext.autosectionlabel',
+    #
     'sphinx.ext.coverage',
+
+    # (lb): pedantic_timedelta includes intersphinx.
+    #  'sphinx.ext.intersphinx',
+
     # Google style docstrings
     # https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
     # https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings
     # https://google.github.io/styleguide/pyguide.html#383-functions-and-methods
     'sphinx.ext.napoleon',
+
     'sphinx.ext.todo',
+
     'sphinx.ext.viewcode',
 ]
+
+# CXREF: easy-as-pypi: See `sphinx_docs_inject` in Maketasks.sh.
+# - I haven't tested, but you might be able to affect rst files
+#   generated by `sphinx-apidoc` (before `sphinx_docs_inject` is
+#   called) with the following options.
+# - E.g., achieve something similar to Module Contents directive:
+#  .. automodule:: easy_as_pypi_appdirs
+#      :special-members: __new__
+#      :noindex:
+#      ...
+# - Though I think I tested this years ago and was unsuccessful.
+#   - What does work is using the injector.
+# - CXREF:
+#   https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autoclass_content
+#
+#  autoclass_content = 'both'
+#
+#  autodoc_default_options = {
+#      'members': 'var1, var2',
+#      'member-order': 'bysource',
+#      'special-members': '__init__',
+#      'undoc-members': True,
+#      'exclude-members': '__weakref__'
+#  }
 
 # Prevent non local image warnings from showing.
 suppress_warnings = ['image.nonlocal_uri']
@@ -107,19 +255,21 @@ project = project_dist
 copyright = project_copy
 author = project_auth
 
-# (lb): Using setuptools_scm magic, per
+# easy-as-pypi uses poetry-dynamic-versioning, so no need to maintain
+# the version here; we can grab it from the package.
+# - This approach originally inspired by setuptools_scm (pre-Poetry):
 #   https://github.com/pypa/setuptools_scm#usage-from-sphinx
-# we can call get_distribution, rather than hard coding herein.
 #
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
 # the built documents.
 #
 # The full version, including alpha/beta/rc tags.
-release = get_distribution(project_dist).version
+release = get_distribution(package_name).version
 # The short X.Y version.
-# - (lb): One place I see `release` used -- to name the browser page.
+# - (lb): One place I see `release` used — to name the browser page.
 version = '.'.join(release.split('.')[:2])
+# version = meta["tool"]["poetry"]["version"]
 
 # The language for content autogenerated by Sphinx. Refer to documentation
 # for a list of supported languages.
@@ -133,7 +283,12 @@ version = '.'.join(release.split('.')[:2])
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+#
+# ISOFF: easy-as-pypi: exclude_patterns definition moved above.
+# - Disabling this rather than deleting entirely, to retain diffability
+#   with reference conf.py (what `sphinx-quickstart` creates).
+#
+#  exclude_patterns = ['_build']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -175,8 +330,9 @@ html_theme = 'sphinx_rtd_theme'
 # but the Sphinx package has not been released to PyPI since Feb, 2019.
 # Here's the error:
 #   writing additional pages...  search/<path>/.tox/docs/lib/python3.8/site-packages/
-#       sphinx_rtd_theme/search.html:21: RemovedInSphinx30Warning: To modify script_files in
-#       the theme is deprecated. Please insert a <script> tag directly in your theme instead.
+#     sphinx_rtd_theme/search.html:21: RemovedInSphinx30Warning: To modify
+#     script_files in the theme is deprecated. Please insert a <script> tag
+#     directly in your theme instead.
 html_theme_path = ["_themes", ]
 
 # Theme options are theme-specific and customize the look and feel of a
@@ -206,7 +362,7 @@ html_theme_options = {
 
 # https://docs.readthedocs.io/en/latest/vcs.html?highlight=conf_py_path
 html_context = {
-    # Enable the "Edit in GitHub" link within the header of each page.
+    # Enable the "Edit on GitHub" link within the header of each page.
     'display_github': True,
     # Set the following variables to generate the resulting github URL for each page.
     # Format Template: https://{{ github_host|default("github.com") }}
@@ -214,14 +370,28 @@ html_context = {
     #   /{{ github_version }}{{ conf_py_path }}{{ pagename }}{{ suffix }}
     'github_user': project_ghuser,
     'github_repo': project_ghrepo,
-    # Branch name.
-    'github_version': 'develop/',
+    # This branch name controls the *Edit on GitHub* on RTD page headers.
+    # USYNC: The main/default GH branch: 'release'.
+    # - MAYBE: Replace hardcoded value with {{ template.value }},
+    #          or maybe use `git rev-parse --abbrev-ref=loose HEAD`.
+    #    import subprocess
+    #    completed_proc = subprocess.run(['git', 'rev-parse', '--abbrev-ref=loose', 'HEAD'], capture_output=True)
+    #    completed_proc.stdout.decode().strip()
+    'github_version': 'release/',
     # Path in the checkout to the docs root.
     'conf_py_path': 'docs/',
 }
 
+# File-wide metadata.
+# (lb): I found this documented somewhere but it did not fix the
+# "Edit on GitHub" broken link.
+#   github_url = 'https://github.com/doblabs/easy-as-pypi'
+
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
+# (lb): I've seen this path in some projects, but I think it's only
+# necessary if you install sphinx_rtd_theme manually (not via pip).
+#   html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -234,17 +404,25 @@ html_context = {
 # The name of an image file (relative to this directory) to place at the
 # top of the sidebar.
 #html_logo = None
+# The logo could be placed in the navigation area, but it's distracting.
+# Best left at the bottom of the README instead.
+#   html_logo = 'assets/hfpt-logo-lrg.png'
 
 # The name of an image file (within the static path) to use as favicon
 # of the docs.  This file should be a Windows icon file (.ico) being
 # 16x16 or 32x32 pixels large.
 #html_favicon = None
+# (lb): Set your project logo thusly:
+#  html_favicon = 'assets/easy-as-pypi_logo.png'
 
 # Add any paths that contain custom static files (such as style sheets)
 # here, relative to this directory. They are copied after the builtin
 # static files, so a file named "default.css" will overwrite the builtin
 # "default.css".
 #html_static_path = ['_static']
+# (lb): include docs/_static/images/*.png,
+#       if you added, say, a project logo.
+#  html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
@@ -262,6 +440,7 @@ html_sidebars = {
         'navigation.html',
         'relations.html',
         'searchbox.html',
+        # (lb): To donate, or not to donate.
         'donate.html',
     ]
 }
@@ -391,19 +570,24 @@ texinfo_documents = [(
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-# https://www.sphinx-doc.org/en/master/_modules/sphinx/builders/linkcheck.html
+# -- Custom options for easy-as-pypi and related projects --------------
+
+# If `lintcheck` complains about your anchor links, add them below.
+#
+# - CXREF: Default is: linkcheck_anchors_ignore = ["^!"]
+#     https://www.sphinx-doc.org/en/master/usage/configuration.html
+# - CXREF: `lintcheck` source:
+#     https://www.sphinx-doc.org/en/master/_modules/sphinx/builders/linkcheck.html
 linkcheck_anchors_ignore = [
     # Default ignore entry is leading bang.
     "^!",
-    # FIXME/2019-02-19: (lb): I'm having issues with `linkcheck`
-    # not liking my anchors, which I swear are working for me!
+    # `linkcheck` complains about these perfectly-working anchor links.
+    # - E.g.,
+    #   `<https://easy_as_pypi.readthedocs.io/en/latest/contributing.html#get-started>`__
     "get-started",
 ]
-
-linkcheck_ignore = [
-    # It's true, "Anchor 'metricsmethodlength' not found". The HTML looks like:
-    #   <dt id="conf-envlist">
-    # but somehow it works (in Chromium for me, (lb)).
-    'https://tox.readthedocs.io/en/latest/config.html#conf-envlist',
-]
+# 2023-11-01: linkcheck now reports broken on local links, not sure why.
+#   sphinx-build --version: 6.2.1. See also:
+#     ../.venv-easy-as-pypi/lib/python3.11/site-packages/sphinx/__init__.py
+linkcheck_ignore = ["code-of-conduct.html"]
 
