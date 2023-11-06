@@ -19,19 +19,19 @@ class KeyChainedValue(object):
     .. automethod:: __init__
     """
 
-    _envvar_prefix = ''
+    _envvar_prefix = ""
     _envvar_warned = False
 
     def __init__(
         self,
         section=None,
-        name='',
+        name="",
         default_f=None,
         value_type=None,
         allow_none=False,
         # Optional.
-        choices='',
-        doc='',
+        choices="",
+        doc="",
         ephemeral=False,
         hidden=False,
         validate=None,
@@ -121,14 +121,12 @@ class KeyChainedValue(object):
 
     @property
     def name(self):
-        """Returns the setting name.
-        """
+        """Returns the setting name."""
         return self._name
 
     @property
     def default(self):
-        """Returns the default setting value.
-        """
+        """Returns the default setting value."""
         return self._default_f(self._section)
 
     def _deduce_value_type(self, value_type=None):
@@ -168,21 +166,19 @@ class KeyChainedValue(object):
             return str
         # We could default to, say, str, or we could nag user to either
         # add another `elif` here, or to fix their default return value.
-        msg = _(' (Unrecognized value type: ‘{}’)').format(
+        msg = _(" (Unrecognized value type: ‘{}’)").format(
             type(default_value).__name__,
         )
         raise NotImplementedError(msg)
 
     @property
     def doc(self):
-        """Returns the setting help text.
-        """
+        """Returns the setting help text."""
         return self._doc
 
     @property
     def ephemeral(self):
-        """Returns the ephemeral state.
-        """
+        """Returns the ephemeral state."""
         if callable(self._ephemeral):
             if self._section is None:
                 return False
@@ -198,8 +194,7 @@ class KeyChainedValue(object):
 
     @property
     def hidden(self):
-        """Returns the hidden state.
-        """
+        """Returns the hidden state."""
         if callable(self._hidden):
             if self._section is None:
                 # FIXME/2019-12-23: (lb): I think this is unreachable,
@@ -211,9 +206,8 @@ class KeyChainedValue(object):
 
     @property
     def persisted(self):
-        """Returns True if the setting value was set via :meth:`value_from_config`.
-        """
-        return hasattr(self, '_val_config')
+        """Returns True if the setting value was set via :meth:`value_from_config`."""
+        return hasattr(self, "_val_config")
 
     def _typify(self, value):
         if value is None:
@@ -223,9 +217,9 @@ class KeyChainedValue(object):
         if self._value_type is bool:
             if isinstance(value, bool):
                 return value
-            elif value == 'True':
+            elif value == "True":
                 return True
-            elif value == 'False':
+            elif value == "False":
                 return False
             else:
                 raise ValueError(_(" (Expected a bool, or “True” or “False”)"))
@@ -249,7 +243,7 @@ class KeyChainedValue(object):
     # ***
 
     def __str__(self):
-        return '{}{}{}: {}'.format(
+        return "{}{}{}: {}".format(
             self._section.section_path(),
             self._section.SEP,
             self._name,
@@ -330,7 +324,6 @@ class KeyChainedValue(object):
         self._val_origin = orig_value
 
     def _value_conform_and_validate(self, value, is_default=False):
-
         def _corformidate():
             _value = value
             addendum = None
@@ -357,7 +350,9 @@ class KeyChainedValue(object):
             if addendum is not None:
                 raise ValueError(
                     _("Unrecognized value for setting ‘{}’: “{}”{}").format(
-                        self._name, value, addendum,
+                        self._name,
+                        value,
+                        addendum,
                     ),
                 )
             return _value
@@ -374,13 +369,13 @@ class KeyChainedValue(object):
                 try:
                     # The caller's validate will either raise or return a truthy.
                     if not self._validate_f(_value):
-                        addendum = ''
+                        addendum = ""
                 except Exception as err:
                     addendum = str(err)
             elif self._choices:
                 if _value not in self._choices:
-                    addendum = _(' (Choose from: ‘{}’)').format(
-                        '’, ‘'.join(self._choices)
+                    addendum = _(" (Choose from: ‘{}’)").format(
+                        "’, ‘".join(self._choices)
                     )
             return addendum
 
@@ -390,21 +385,20 @@ class KeyChainedValue(object):
 
     @property
     def value_from_default(self):
-        """Returns the conformed default value.
-        """
+        """Returns the conformed default value."""
         return self._value_conform_and_validate(self.default, is_default=True)
 
     # ***
 
     @property
     def value_from_forced(self):
-        """Returns the "forced" setting value.
-        """
+        """Returns the "forced" setting value."""
         return self._val_forced
 
     @value_from_forced.setter
     def value_from_forced(self, value_from_forced):
-        """Sets the "forced" setting value, which supersedes values from all other sources.
+        """Sets the "forced" setting value, which supersedes values from all
+        other sources.
 
         Args:
             value_from_forced: The forced setting value.
@@ -415,8 +409,7 @@ class KeyChainedValue(object):
 
     @property
     def value_from_cliarg(self):
-        """Returns the "cliarg" setting value.
-        """
+        """Returns the "cliarg" setting value."""
         return self._val_cliarg
 
     @value_from_cliarg.setter
@@ -448,13 +441,14 @@ class KeyChainedValue(object):
         if self.warn_if_no_envvar_prefix():
             raise KeyError
 
-        environame = '{}{}_{}'.format(
+        environame = "{}{}_{}".format(
             KeyChainedValue._envvar_prefix,
-            self._section.section_path(sep='_').upper(),
+            self._section.section_path(sep="_").upper(),
             self._name.upper(),
         )
         envval = os.environ[environame]
         envval = self._value_conform_and_validate(envval)
+
         return envval
 
     def warn_if_no_envvar_prefix(self):
@@ -467,7 +461,7 @@ class KeyChainedValue(object):
             # wall (that is, as a library, generally not for us to
             # emit errors to the end user, but the end user here
             # should be the DEV during testing).
-            err_msg = 'WARNING: You should set KeyChainedValue._envvar_prefix'
+            err_msg = "WARNING: You should set KeyChainedValue._envvar_prefix"
             print(err_msg, file=sys.stderr)
 
         KeyChainedValue._envvar_warned = True
@@ -478,8 +472,7 @@ class KeyChainedValue(object):
 
     @property
     def value_from_config(self):
-        """Returns the "config" setting value.
-        """
+        """Returns the "config" setting value."""
         return self._val_config
 
     @value_from_config.setter
@@ -494,8 +487,8 @@ class KeyChainedValue(object):
         self._val_origin = orig_value
 
     def forget_config_value(self):
-        """Removes the "config" setting value set by the :meth:`value_from_config` setter.
-        """
+        """Removes the "config" setting value set by the :meth:`value_from_config`
+        setter."""
         try:
             del self._val_config
         except AttributeError:
@@ -522,8 +515,8 @@ class KeyChainedValue(object):
 
     @property
     def asobj(self):
-        """Returns self, behaving as identify function (need to quack like ``ConfigDecorator``).
-        """
+        """Returns self, behaving as identify function (need to quack like
+        ``ConfigDecorator``)."""
         return self
 
     # ***
@@ -558,24 +551,23 @@ class KeyChainedValue(object):
         """
         # Honor forced values foremost.
         try:
-            return self.value_from_forced and 'forced'
+            return self.value_from_forced and "forced"
         except AttributeError:
             pass
         # Honor CLI-specific values secondmost.
         try:
-            return self.value_from_cliarg and 'cliarg'
+            return self.value_from_cliarg and "cliarg"
         except AttributeError:
             pass
         # Check the environment third.
         try:
-            return self.value_from_envvar and 'envvar'
+            return self.value_from_envvar and "envvar"
         except KeyError:
             pass
         # See if the config value was specified by the config that was read.
         try:
-            return self.value_from_config and 'config'
+            return self.value_from_config and "config"
         except AttributeError:
             pass
         # Nothing found so far! Finally just return the default value.
-        return 'default'
-
+        return "default"
