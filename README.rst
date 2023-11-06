@@ -3,28 +3,37 @@ config-decorator User Options Framework
 #######################################
 .. config-decorator Documentation
 
-.. image:: https://api.travis-ci.com/hotoffthehamster/config-decorator.svg?branch=release
-  :target: https://travis-ci.com/hotoffthehamster/config-decorator
+.. CXREF:
+   https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/adding-a-workflow-status-badge
+
+.. image:: https://github.com/doblabs/config-decorator/actions/workflows/checks-unspecial.yml/badge.svg?branch=release
+  :target: https://github.com/doblabs/config-decorator/actions/workflows/checks-unspecial.yml/badge.svg?branch=release
   :alt: Build Status
 
-.. image:: https://codecov.io/gh/hotoffthehamster/config-decorator/branch/release/graph/badge.svg
-  :target: https://codecov.io/gh/hotoffthehamster/config-decorator
+.. CXREF: https://app.codecov.io/github.com/doblabs/config-decorator/settings/badge
+
+.. image:: https://codecov.io/gh/doblabs/config-decorator/branch/release/graph/badge.svg?token=AlKUyOgTGY
+  :target: https://app.codecov.io/gh/doblabs/config-decorator
   :alt: Coverage Status
 
 .. image:: https://readthedocs.org/projects/config-decorator/badge/?version=latest
   :target: https://config-decorator.readthedocs.io/en/latest/
   :alt: Documentation Status
 
-.. image:: https://img.shields.io/github/v/release/hotoffthehamster/config-decorator.svg?style=flat
-  :target: https://github.com/hotoffthehamster/config-decorator/releases
+.. image:: https://img.shields.io/github/v/release/doblabs/config-decorator.svg?style=flat
+  :target: https://github.com/doblabs/config-decorator/releases
   :alt: GitHub Release Status
 
 .. image:: https://img.shields.io/pypi/v/config-decorator.svg
   :target: https://pypi.org/project/config-decorator/
   :alt: PyPI Release Status
 
-.. image:: https://img.shields.io/github/license/hotoffthehamster/config-decorator.svg?style=flat
-  :target: https://github.com/hotoffthehamster/config-decorator/blob/release/LICENSE
+.. image:: https://img.shields.io/pypi/pyversions/config-decorator.svg
+  :target: https://pypi.org/project/config-decorator/
+  :alt: PyPI Supported Python Versions
+
+.. image:: https://img.shields.io/github/license/doblabs/config-decorator.svg?style=flat
+  :target: https://github.com/doblabs/config-decorator/blob/release/LICENSE
   :alt: License Status
 
 .. |dob| replace:: ``dob``
