@@ -758,7 +758,7 @@ optional = true
 #
 #   https://pypi.org/project/Sphinx
 #   https://www.sphinx-doc.org/en/master/
-sphinx = "^6.2.1"
+sphinx = "^7.1.2"
 # LATER/2023-05-14: Update to v7 once sphinx_rtd_theme supports
 #  Sphinx = ">=7.0.1"
 #
