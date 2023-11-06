@@ -10,6 +10,45 @@ History
 
 .. :changelog:
 
+2.1.0 (2023-11-06)
+==================
+
+.. FIXME/2023-11-06: make-docs/RTD do not show bulleted/indented
+   list when outer list in unordered (`*`) but it works when you
+   use an ordered (`#.`) list.
+
+* Feature: Update build system to Poetry
+
+  * Adopt `Poetry <https://python-poetry.org/>`__,
+    replacing ``distutils`` and ``setuptools`` build tools.
+
+  * Modernize ``pyproject.toml``, per
+    `PEP-517 <https://peps.python.org/pep-0517/>`__.
+
+  * Remove ``setup.cfg`` and ``setup.py``,
+    and ``requirements/*.pip``.
+
+* Feature: Fully automated GitHub Actions CI tooling
+
+  * All checks (lint & test) converted to GitHub Actions, from Travis CI.
+
+  * New: Plumbed a full-featured, fully-automated release workflow.
+
+    * Just push a version tag, and the workflow does the rest.
+
+    * It'll test, build, publish, and verify the release.
+
+    * This also starts a *release cascade*:
+
+      The "closest" repos downstream (within the org) will be notified.
+
+      These repos will update their dependencies, version and release
+      themselves, and then continue the cascade.
+
+      Eventually, one or more end user apps will be updated, versioned,
+      and released, and the cascade will stop, all from a single tag on
+      a different project. *One and done,* as they say.
+
 2.0.14 (2020-07-02)
 ===================
 
