@@ -19,12 +19,11 @@
       from config_decorator.config_decorator import section
 """
 
-from .config_decorator import section, ConfigDecorator
+from .config_decorator import ConfigDecorator, section
 from .key_chained_val import KeyChainedValue
 
 __all__ = (
-    'section',
-    'ConfigDecorator',
-    'KeyChainedValue',
+    "section",
+    "ConfigDecorator",
+    "KeyChainedValue",
 )
-

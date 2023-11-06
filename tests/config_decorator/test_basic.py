@@ -10,8 +10,6 @@ from config_decorator import section
 from config_decorator.config_decorator import ConfigDecorator
 
 
-# ***
-
 class TestConfigDecoratorEmpty:
     # 2019-12-23: (lb): First test. 20% coverage.
     def test_empty_config(self):

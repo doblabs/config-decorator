@@ -469,7 +469,7 @@ class TestConfigDecoratorFindSettingOnePart:
 class TestConfigDecoratorAsobjOkay:
     def test_something(self):
         rootcfg = generate_config_root()
-        assert(
+        assert (
             "Test sub sub config setting, level1.level2.bar"
             == rootcfg.asobj.level1.level2.baz.doc
         )

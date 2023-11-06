@@ -125,7 +125,6 @@ example, ``@RootSectionBar.setting`` was used inside ``BarSubsectionBaz``.)
 import inspect
 from collections import OrderedDict
 from functools import update_wrapper
-
 from gettext import gettext as _
 
 from .key_chained_val import KeyChainedValue
@@ -138,7 +137,7 @@ __all__ = (
     # (lb): The ConfigDecorator is technically private, because the user
     # calls @section() and doesn't make ConfigDecorator objects directly.
     # However, not including the class in __all__ excludes it from docs/, too.
-    'ConfigDecorator',
+    "ConfigDecorator",
 )
 
 
@@ -193,17 +192,17 @@ class ConfigDecorator(object):
         _name: The section name, specified in the decorator,
                or inferred from the class name.
 
-    .. DEV: Use `automethod` to document private functions (include them in docs/_build).
+    .. DEV: Use `automethod` to document private functions (include them in
+            docs/_build).
     ..
     .. E.g., `automethod:: _my_method_name`
     """
 
-    SEP = '.'
+    SEP = "."
     """Separator character used to (un)flatten section.subsection.settings paths."""
 
     def __init__(self, cls, cls_or_name, parent=None):
-        """Inits ConfigDecorator with decorated class, section name, and parent ref.
-        """
+        """Inits ConfigDecorator with decorated class, section name, and parent ref."""
         # (lb): Note that `make docs` ignores the __init__ docstring;
         # it shows the params in the class docstring, though, so the
         # parameters are documented there.
@@ -272,8 +271,8 @@ class ConfigDecorator(object):
     # ***
 
     def del_not_persisted(self, config_obj):
-        """Removes entries from config_obj without a value from the "config" source.
-        """
+        """Removes entries from config_obj without a value from the "config" source."""
+
         def visitor(condec, keyval):
             if keyval.persisted:
                 return  # Keep.
@@ -298,14 +297,17 @@ class ConfigDecorator(object):
         or was parsed from the command line, or was forceable set by the code,
         calling this method will effectively set the value back to its default.
         """
+
         def visitor(condec, keyval):
             keyval.forget_config_value()
+
         self.walk(visitor)
 
     # ***
 
     def section_path(self, sep=None, _parts=None):
-        """Returns a flattened canonicalized representation of the complete section path.
+        """Returns a flattened canonicalized representation of the complete
+        section path.
 
         Args:
             sep: The separator character to use, defaults to ConfigDecorator.SEP.
@@ -366,7 +368,7 @@ class ConfigDecorator(object):
 
         Args: Same as for _prepare_dict().
         """
-        kwargs.setdefault('unmutated', True)
+        kwargs.setdefault("unmutated", True)
         return self._prepare_dict(config, **kwargs)
 
     def _prepare_dict(
@@ -393,14 +395,14 @@ class ConfigDecorator(object):
         Returns:
             The number of settings updated or added to the "config" dict.
         """
+
         def _prepare_items():
             n_settings = 0
             for section, conf_dcor in self._sections.items():
                 n_settings += _recurse_section(section, conf_dcor)
             for name, ckv in self._key_vals.items():
-                if (
-                    (ckv.ephemeral and not add_ephemeral)
-                    or (ckv.hidden and not add_hidden)
+                if (ckv.ephemeral and not add_ephemeral) or (
+                    ckv.hidden and not add_hidden
                 ):
                     continue
                 try:
@@ -429,10 +431,7 @@ class ConfigDecorator(object):
             if skip_unset and not ckv.persisted:
                 # This includes ckv.ephemeral.
                 raise AttributeError()
-            if (
-                (use_defaults or not ckv.persisted)
-                and (add_hidden or not ckv.hidden)
-            ):
+            if (use_defaults or not ckv.persisted) and (add_hidden or not ckv.hidden):
                 if not unmutated:
                     # ckv.default is the non-conformed input value;
                     # we want the value after it's been internalized.
@@ -473,7 +472,8 @@ class ConfigDecorator(object):
         for section, conf_dcor in self._sections.items():
             if section in config:
                 unsubsumed, sub_errors = conf_dcor.update_known(
-                    config[section], errors_ok=errors_ok,
+                    config[section],
+                    errors_ok=errors_ok,
                 )
                 if not unsubsumed:
                     del unconsumed[section]
@@ -498,7 +498,8 @@ class ConfigDecorator(object):
     # ***
 
     def update_gross(self, other, errors_ok=False):
-        """Consumes all values from a dict, creating new sections and settings as necessary.
+        """Consumes all values from a dict, creating new sections and
+        settings as necessary.
 
         Args:
             other: The dict whose contents will be consumed.
@@ -530,7 +531,9 @@ class ConfigDecorator(object):
         error_messages = {}
         for key, val in other.items():
             if isinstance(val, dict):
-                sub_errors = self.get_section(key).update_gross(val, errors_ok=errors_ok)
+                sub_errors = self.get_section(key).update_gross(
+                    val, errors_ok=errors_ok
+                )
                 if sub_errors:
                     error_messages[key] = sub_errors
             else:
@@ -545,15 +548,13 @@ class ConfigDecorator(object):
 
         return error_messages
 
-
     # (lb): We have some dict-ish methods, like setdefault, and keys, values,
     # and items, so might as well have an update method, too. But update is
     # just a shim to update_gross, so that you're aware there's also the
     # similar method, update_known. update calls update_gross, which is
     # more like the actual dict.update() method than update_known.
     def update(self, other, errors_ok=False):
-        """Alias to :meth:`update_gross`.
-        """
+        """Alias to :meth:`update_gross`."""
         self.update_gross(other, errors_ok=errors_ok)
 
     # ***
@@ -582,8 +583,7 @@ class ConfigDecorator(object):
             if len(args) > 1:
                 return
             raise TypeError(
-                _('setdefault expected at least 2 arguments, got {}')
-                .format(len(args))
+                _("setdefault expected at least 2 arguments, got {}").format(len(args))
             )
 
         def split_args_on_dot_sep(setting_value, possibly_dotted_names):
@@ -606,8 +606,8 @@ class ConfigDecorator(object):
                 return conf_dcor._key_vals[setting_name]
             ckv = KeyChainedValue(
                 name=setting_name,
-                default_f=lambda x: '',
-                doc=_('Created by `setdefault`'),
+                default_f=lambda x: "",
+                doc=_("Created by `setdefault`"),
                 section=self,
             )
             try:
@@ -644,18 +644,15 @@ class ConfigDecorator(object):
     # ***
 
     def keys(self):
-        """Returns a list of the top-level section and settings names.
-        """
+        """Returns a list of the top-level section and settings names."""
         return self.as_dict().keys()
 
     def values(self):
-        """Returns a list of sub-section branches and top-level settings values.
-        """
+        """Returns a list of sub-section branches and top-level settings values."""
         return self.as_dict().values()
 
     def items(self):
-        """Returns dict of section names → subsections, and setting names → values.
-        """
+        """Returns dict of section names → subsections, and setting names → values."""
         return self.as_dict().items()
 
     # ***
@@ -757,6 +754,7 @@ class ConfigDecorator(object):
             The object also has a magic ``_`` method, if you want to use dot-notation
             to get at a subsection, but then want access to the actual section object.
         """
+
         class anyobj(object):
             def __getattr__(_self, name):
                 # See also:
@@ -765,9 +763,9 @@ class ConfigDecorator(object):
 
             @property
             def _(_self):
-                """A wonky get-out-of-jail-free card, or reference to the section.
-                """
+                """A wonky get-out-of-jail-free card, or reference to the section."""
                 return self
+
         return anyobj()
 
     def __delitem__(self, name_or_keyval):
@@ -822,16 +820,15 @@ class ConfigDecorator(object):
         else:
             objects = self._find_objects_named(name)
         if len(objects) > 1:
-            raise error_cls(
-                _('More than one config object named: “{}”').format(name)
-            )
+            raise error_cls(_("More than one config object named: “{}”").format(name))
         if objects:
             return objects[0].asobj if asobj else objects[0]
         else:
             # DEV: This happens if you lookup an attr in config you didn't define.
             raise error_cls(
                 _('Unknown section for {}.__getattr__(name="{}")').format(
-                    self.__class__.__name__, name,
+                    self.__class__.__name__,
+                    name,
                 )
             )
 
@@ -868,7 +865,8 @@ class ConfigDecorator(object):
         return section(name, parent=self)
 
     def setting(self, message=None, **kwargs):
-        """Method decorator used to create individual settings in a configuration section.
+        """Method decorator used to create individual settings in a
+        configuration section.
 
         For instance::
 
@@ -885,8 +883,9 @@ class ConfigDecorator(object):
                     return 'My Setting's Default Value'
 
         """
+
         def decorator(func):
-            kwargs.setdefault('name', func.__name__)
+            kwargs.setdefault("name", func.__name__)
             doc = message
             if doc is None:
                 doc = func.__doc__
@@ -903,17 +902,18 @@ class ConfigDecorator(object):
             def _decorator(*args, **kwargs):
                 # FIXME/2019-12-23: (lb): This might be unreachable code.
                 return func(*args, **kwargs)
+
             return update_wrapper(_decorator, func)
+
         return decorator
 
     # ***
 
     @classmethod
     def create_root_for_section(cls, section_name, section_cdec):
-        """Creates a new ConfigDecorator as root of the passed instance.
-        """
+        """Creates a new ConfigDecorator as root of the passed instance."""
         section_cdec._name = section_name
-        condec = ConfigDecorator(object, cls_or_name='', parent=None)
+        condec = ConfigDecorator(object, cls_or_name="", parent=None)
         condec.set_section(section_name, section_cdec)
         return condec
 
@@ -942,6 +942,7 @@ class ConfigDecorator(object):
 # then the method being invoked must return the actual decorator.
 #
 # Here we support either approach.
+
 
 def section(cls_or_name, parent=None):
     """Class decorator used to indicate the root section of a settings configuration.
@@ -976,6 +977,7 @@ def section(cls_or_name, parent=None):
 
           To access an instance of the decorated class, use ``_innerobj``.
     """
+
     def _section():
         # Check if decorator was @passive or @emphatic().
         if inspect.isclass(cls_or_name):
@@ -1038,4 +1040,3 @@ def section(cls_or_name, parent=None):
         return ConfigDecorator(cls, cls_or_name, parent=parent)
 
     return _section()
-
