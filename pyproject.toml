@@ -885,6 +885,7 @@ sphinx = [
     { version = "^6.2.1", python = "~3.8", optional = true },
     { version = "^7.2.6", python = "^3.9", optional = true },
 ]
+sphinx-rtd-theme = "^2.0.0rc4"
 
 [tool.poetry.extras]
 readthedocs = [ "tomli", "sphinx" ]
