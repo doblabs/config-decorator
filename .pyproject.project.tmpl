@@ -2,9 +2,9 @@
 
 # vim:tw=0:ts=4:sw=4:et:norl:ft=toml
 # Author: Landon Bouma <https://tallybark.com/>
-# Project: https://github.com/doblabs/easy-as-pypi#🥧
+# Project: https://github.com/doblabs/config-decorator#🎀
 # License: MIT
-# Copyright (c) © 2020-2023 Landon Bouma. All Rights Reserved.
+# Copyright (c) © 2019-2023 Landon Bouma. All Rights Reserved.
 
 {%- block project_meta -%}
 
@@ -12,9 +12,9 @@
 # REFER: https://peps.python.org/pep-0621/
 #   https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
 
-name = "easy-as-pypi"
+name = "config-decorator"
 version = "0.0.0"
-description = "Bootstrapping your next Python CLI made easy as PyPI"
+description = "Class @decorator for defining exquisite settings configurations"
 
 authors = ["Landon Bouma <doblabs@tallybark.com>"]
 maintainers = ["Tally Bark LLC <doblabs@tallybark.com>"]
@@ -28,7 +28,7 @@ classifiers = [
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "Operating System :: OS Independent",
-    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
 # Keywords for PyPI to display, and to use for search results.
@@ -42,6 +42,13 @@ keywords = [
     "TUI",
     "skeleton",
     "cookiecutter",
+    "library",
+    "configuration",
+    "settings",
+    "options",
+    "ini",
+    "conf",
+    "config",
 ]
 
 # poetry build excludes __pycache__ dirs
@@ -69,18 +76,16 @@ include = [
 
 # ***
 
-# YOU: Disable this if your project derived from easy-as-pypi
-#      does not have a runnable script.
-#      - Otherwise set this to the package entry point.
-
-[tool.poetry.scripts]
-easy-as-pypi = "easy_as_pypi:cli"
+# YOU: Uncomment and customize to add a CLI entrypoint:
+#
+#   [tool.poetry.scripts]
+#   config-decorator = "config_decorator:cli"
 
 # ***
 
 [tool.easy_as_pypi]
 author = "Landon Bouma <https://tallybark.com/>"
-copy_years_owner = "2020-2023 Landon Bouma"
+copy_years_owner = "2019-2023 Landon Bouma"
 coc_contact_email = "tallybark+doblabs -at- gmail.com"
 
 # ***
@@ -106,18 +111,18 @@ coc_contact_email = "tallybark+doblabs -at- gmail.com"
 # WIRED: The Sphinx config (docs/conf.py) and .github/bin/update-poetry
 #        require that 'homepage' or 'repository' is set.
 
-homepage = "https://github.com/doblabs/easy-as-pypi#🥧"
+homepage = "https://github.com/doblabs/config-decorator#🎀"
 
 # Include 'repository' unless same as homepage.
 #  repository = "https://github.com/doblabs/easy-as-pypi"
 
-history = "https://github.com/doblabs/easy-as-pypi/blob/release/HISTORY.rst"
+history = "https://github.com/doblabs/config-decorator/blob/release/HISTORY.rst"
 
-documentation = "https://easy-as-pypi.readthedocs.io/en/latest"
+documentation = "https://config-decorator.readthedocs.io/en/latest"
 
-issues = "https://github.com/doblabs/easy-as-pypi/issues"
+issues = "https://github.com/doblabs/config-decorator/issues"
 
-download = "https://pypi.org/project/easy-as-pypi/#files"
+download = "https://pypi.org/project/config-decorator/#files"
 
 {% endblock %}
 
@@ -125,5 +130,5 @@ download = "https://pypi.org/project/easy-as-pypi/#files"
 
 {%- block project_dependencies -%}
 
-click = "^8.0.0"
+# No easy-as-pypi-getver-specific dependencies.
 {% endblock -%}
