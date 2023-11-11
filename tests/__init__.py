@@ -5,4 +5,3 @@
 # Copyright © 2019-2020 Landon Bouma. All rights reserved.
 
 """Tests for the ``config-decorator`` package."""
-

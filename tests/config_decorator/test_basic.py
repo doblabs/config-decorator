@@ -24,10 +24,11 @@ class TestConfigDecoratorEmpty:
 
 # ***
 
+
 class TestConfigDecoratorNamed:
     # 2019-12-23: (lb): Second test. 21% coverage.
     def test_named_config(self):
-        @section('foo', parent=None)
+        @section("foo", parent=None)
         class RootSection(object):
             pass
 
@@ -38,6 +39,7 @@ class TestConfigDecoratorNamed:
 
 # ***
 
+
 class TestConfigDecoratorNested:
     # 2019-12-23: (lb): Second test. 22% coverage.
 
@@ -46,12 +48,13 @@ class TestConfigDecoratorNested:
         class RootSection(object):
             pass
 
-        @RootSection.section('foo')
+        @RootSection.section("foo")
         class NestedConfig(object):
             pass
 
 
 # ***
+
 
 class TestConfigDecoratorOverlay:
     # 2019-12-23: (lb): Third test. 31% coverage.
@@ -60,7 +63,7 @@ class TestConfigDecoratorOverlay:
         @section(None)
         class RootSection(object):
             def inner_function(self):
-                return 'bar'
+                return "bar"
 
         @RootSection.section(None)
         class RootSectionOverlay(object):
@@ -78,24 +81,26 @@ class TestConfigDecoratorOverlay:
 
 # ***
 
+
 class TestConfigDecoratorSameSectionRef:
     def test_same_section_ref(self):
         @section(None)
         class RootSection(object):
             pass
 
-        @RootSection.section('foo')
+        @RootSection.section("foo")
         class RootSectionFoo1(object):
             def __init__(self):
                 pass
 
-        @RootSection.section('foo')
+        @RootSection.section("foo")
         class RootSectionFoo2(object):
             def __init__(self):
                 pass
 
 
 # ***
+
 
 class TestConfigDecoratorPassive:
     def test_root_section_passive(self):
@@ -105,6 +110,7 @@ class TestConfigDecoratorPassive:
 
 
 # ***
+
 
 class TestSectionSettingDocstringDoc:
     def test_section_setting_implied_doc(self):
@@ -117,10 +123,11 @@ class TestSectionSettingDocstringDoc:
             @property
             @RootSection.setting()
             def foo(self):
-                '''The foo setting does bar.'''
+                """The foo setting does bar."""
 
 
 # ***
+
 
 def generate_config_root_unknown_type():
     @section(None)
@@ -130,7 +137,7 @@ def generate_config_root_unknown_type():
     @RootSection.section(None)
     class RootSectionReal(object):
         @property
-        @RootSection.setting('test')
+        @RootSection.setting("test")
         def foo(self):
             # Default return value type will not be recognized.
             return object()
@@ -146,6 +153,7 @@ class TestSectionSettingDefaultUnknownType:
 
 # ***
 
+
 def generate_config_root_unknown_bool_string():
     @section(None)
     class RootSection(object):
@@ -159,7 +167,7 @@ def generate_config_root_unknown_bool_string():
             value_type=bool,
         )
         def validate_bool_string_fail_test(self):
-            return 'Tralse'
+            return "Tralse"
 
     return RootSection
 
@@ -172,6 +180,7 @@ class TestSectionSettingDefaultUnknownBoolDefault:
 
 
 # ***
+
 
 def generate_config_root_fails_validation():
     def fail_validation(value):
@@ -203,5 +212,4 @@ class TestSectionSettingValidationFail:
     def test_section_method_subscript(self):
         rootcfg = generate_config_root_fails_validation()
         with pytest.raises(ValueError):
-            rootcfg['validate_bool_string_fail_test'] = 123
-
+            rootcfg["validate_bool_string_fail_test"] = 123
