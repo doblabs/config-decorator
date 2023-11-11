@@ -11,11 +11,10 @@ from config_decorator.config_decorator import ConfigDecorator
 
 
 def generate_config_root():
-
     @section(None)
     class RootSection(object):
         def inner_function(self):
-            return 'foo'
+            return "foo"
 
     # ***
 
@@ -42,27 +41,27 @@ def generate_config_root():
             hidden=lambda x: True,
         )
         def callable_hidden_test(self):
-            return ''
+            return ""
 
         # ***
 
         @property
         @RootSection.setting(
             "Choices test.",
-            choices=['', 'one', 'two', 'three'],
+            choices=["", "one", "two", "three"],
         )
         def choices_test(self):
-            return ''
+            return ""
 
         # ***
 
         @property
         @RootSection.setting(
             "Different Name test.",
-            name='real-option-name',
+            name="real-option-name",
         )
         def real_option_name(self):
-            return ''
+            return ""
 
         # ***
 
@@ -77,7 +76,7 @@ def generate_config_root():
             conform=some_value_conversation,
         )
         def conform_test(self):
-            return '1'
+            return "1"
 
         # ***
 
@@ -106,7 +105,7 @@ def generate_config_root():
             "Default value list test, implicit.",
         )
         def default_value_list_test_implicit(self):
-            return [1, 'foo']
+            return [1, "foo"]
 
         # ***
 
@@ -116,7 +115,7 @@ def generate_config_root():
             ephemeral=True,
         )
         def ephemeral_test(self):
-            return 'This will not be saved!'
+            return "This will not be saved!"
 
         # ***
 
@@ -126,7 +125,7 @@ def generate_config_root():
             ephemeral=lambda x: True,
         )
         def callable_ephemeral_test(self):
-            return 'Neither will this be saved.'
+            return "Neither will this be saved."
 
         # ***
 
@@ -139,7 +138,7 @@ def generate_config_root():
             validate=must_validate_foo,
         )
         def pass_validate_test(self):
-            return 'This will be validated!'
+            return "This will be validated!"
 
         # ***
 
@@ -162,7 +161,7 @@ def generate_config_root():
             value_type=bool,
         )
         def validate_bool_string_false_test(self):
-            return 'False'
+            return "False"
 
         @property
         @RootSection.setting(
@@ -170,11 +169,11 @@ def generate_config_root():
             value_type=bool,
         )
         def validate_bool_string_true_test(self):
-            return 'True'
+            return "True"
 
     # ***
 
-    @RootSection.section('level1')
+    @RootSection.section("level1")
     class RootSectionLevel1(object):
         def __init__(self):
             pass
@@ -184,18 +183,18 @@ def generate_config_root():
             "Test sub config setting, level1.foo",
         )
         def foo(self):
-            return 'baz'
+            return "baz"
 
         @property
         @RootSection.setting(
             "Test same-named settings in separate sections",
         )
         def conflict(self):
-            return 'level1'
+            return "level1"
 
     # ***
 
-    @RootSectionLevel1.section('level2')
+    @RootSectionLevel1.section("level2")
     class RootSectionLevel2(object):
         def __init__(self):
             pass
@@ -205,18 +204,18 @@ def generate_config_root():
             "Test sub sub config setting, level1.level2.bar",
         )
         def baz(self):
-            return 'bat'
+            return "bat"
 
         @property
         @RootSectionLevel1.setting(
             "Test same-named settings in separate sections",
         )
         def conflict(self):
-            return 'level2'
+            return "level2"
 
     # ***
 
-    @RootSection.section('level1.2')
+    @RootSection.section("level1.2")
     class RootSectionLevel1dot2TestsDownloadToDictDelConfigSection(object):
         def __init__(self):
             pass
@@ -228,6 +227,7 @@ def generate_config_root():
 
 # ***
 
+
 class TestConfigDecoratorAsDict:
     def test_something(self):
         rootcfg = generate_config_root()
@@ -238,17 +238,19 @@ class TestConfigDecoratorAsDict:
 
 # ***
 
+
 class TestConfigDecoratorSetDefault:
     def test_something(self):
         rootcfg = generate_config_root()
-        rootcfg.setdefault('totally-unknown-key', 123)
-        rootcfg.setdefault('totally-unknown-key.subsection.too', False)
-        rootcfg.setdefault('level1.foo', 'exercise different branch on known sub key')
+        rootcfg.setdefault("totally-unknown-key", 123)
+        rootcfg.setdefault("totally-unknown-key.subsection.too", False)
+        rootcfg.setdefault("level1.foo", "exercise different branch on known sub key")
         with pytest.raises(TypeError):
-            rootcfg.setdefault('missing.value')
+            rootcfg.setdefault("missing.value")
 
 
 # ***
+
 
 class TestConfigDecoratorKeysValuesItems:
     def test_config_decorator_keys(self):
@@ -270,25 +272,27 @@ class TestConfigDecoratorKeysValuesItems:
 
 # ***
 
+
 class TestConfigDecoratorAttributeMagic:
     def test_something(self):
         rootcfg = generate_config_root()
-        assert rootcfg.asobj.level1.level2.baz.value == 'bat'
+        assert rootcfg.asobj.level1.level2.baz.value == "bat"
 
 
 class TestConfigDecoratorSubscriptability:
     def test_something(self):
         rootcfg = generate_config_root()
-        assert rootcfg['level1']['level2']['baz'] == 'bat'
+        assert rootcfg["level1"]["level2"]["baz"] == "bat"
 
 
 # ***
 
+
 class TestConfigDecoratorFindAllManyParts:
     def test_something(self):
         rootcfg = generate_config_root()
-        settings = rootcfg.find_all(['level1', 'level2', 'baz'])
-        assert settings[0].value == 'bat'
+        settings = rootcfg.find_all(["level1", "level2", "baz"])
+        assert settings[0].value == "bat"
 
 
 class TestConfigDecoratorFindAllNoPartsSelf:
@@ -301,31 +305,34 @@ class TestConfigDecoratorFindAllNoPartsSelf:
 class TestConfigDecoratorFindSection:
     def test_something(self):
         rootcfg = generate_config_root()
-        settings = rootcfg.find_all(parts=['level1', 'level2'])
+        settings = rootcfg.find_all(parts=["level1", "level2"])
         assert len(settings) == 1
-        assert settings[0] is rootcfg['level1']['level2']
+        assert settings[0] is rootcfg["level1"]["level2"]
 
 
 # ***
+
 
 class TestConfigDecoratorFindRoot:
     def test_something(self):
         rootcfg = generate_config_root()
-        assert rootcfg['level1'].find_root() is rootcfg
+        assert rootcfg["level1"].find_root() is rootcfg
         rootcfg = generate_config_root()
-        assert rootcfg['level1'].asobj.foo.find_root() is rootcfg
+        assert rootcfg["level1"].asobj.foo.find_root() is rootcfg
 
 
 # ***
+
 
 class TestConfigDecoratorSectionPath:
     def test_something(self):
         rootcfg = generate_config_root()
-        assert rootcfg.asobj.level1.level2._.section_path() == 'level1.level2'
-        assert rootcfg.asobj.level1.level2._.section_path('_') == 'level1_level2'
+        assert rootcfg.asobj.level1.level2._.section_path() == "level1.level2"
+        assert rootcfg.asobj.level1.level2._.section_path("_") == "level1_level2"
 
 
 # ***
+
 
 class TestConfigDecoratorForgetfulWalk:
     def test_something(self):
@@ -335,6 +342,7 @@ class TestConfigDecoratorForgetfulWalk:
 
 # ***
 
+
 class TestConfigDecoratorSetAttributeValueBool:
     def test_one_way(self):
         rootcfg = generate_config_root()
@@ -342,37 +350,43 @@ class TestConfigDecoratorSetAttributeValueBool:
 
     def test_or_the_other(self):
         rootcfg = generate_config_root()
-        rootcfg['validate_bool_string_false_test'] = False
+        rootcfg["validate_bool_string_false_test"] = False
 
 
 # ***
+
 
 class TestConfigDecoratorSetAttributeValueString:
     def test_something(self):
         rootcfg = generate_config_root()
-        rootcfg['level1.foo'] = 'zab'
+        rootcfg["level1.foo"] = "zab"
 
 
 # ***
+
 
 class TestConfigDecoratorSetAttributeValueList:
     def test_something(self):
         rootcfg = generate_config_root()
-        rootcfg['default_value_list_test_implicit'] = 123
-        assert rootcfg['default_value_list_test_implicit'] == [123, ]
+        rootcfg["default_value_list_test_implicit"] = 123
+        assert rootcfg["default_value_list_test_implicit"] == [
+            123,
+        ]
 
 
 # ***
+
 
 class TestConfigDecoratorSetSubscriptableVague:
     def test_something(self):
         rootcfg = generate_config_root()
         # KeyError: 'More than one config object named: “conflict”'
         with pytest.raises(KeyError):
-            rootcfg['conflict'] = 'zab'
+            rootcfg["conflict"] = "zab"
 
 
 # ***
+
 
 class TestConfigDecoratorGetAttributeError:
     def test_something(self):
@@ -381,18 +395,19 @@ class TestConfigDecoratorGetAttributeError:
             # AttributeError: 'More than one config object named: “conflict”'
             rootcfg.conflict
         # However, setting an unknown key works just fine.
-        rootcfg.conflict = 'zab'
+        rootcfg.conflict = "zab"
         # FIXME/2019-12-23: (lb): Remove attribute magic, or maybe gait
         # through an intermediate attribute, e.g.,, rootcfg.settings.conflict.
 
 
 # ***
 
+
 class TestConfigDecoratorDownloadToDict:
     def test_something(self):
         rootcfg = generate_config_root()
         rootcfg.asobj.level1.level2.baz.value_from_config = (
-            'test: return ckv.value_from_config'
+            "test: return ckv.value_from_config"
         )
         cfgdict = {}
         rootcfg.apply_items(cfgdict)
@@ -401,18 +416,17 @@ class TestConfigDecoratorDownloadToDict:
 
 # ***
 
+
 class TestConfigDecoratorUpdateKnown:
     def test_something(self):
         rootcfg = generate_config_root()
         rootcfg.asobj.level1.level2.baz.value_from_config = (
-            'test: return ckv.value_from_config'
+            "test: return ckv.value_from_config"
         )
         cfgdict = {
-            'level1': {
-                'level2': {
-                    'baz': 'zab'
-                },
-                'unknown': 'unconsumed',
+            "level1": {
+                "level2": {"baz": "zab"},
+                "unknown": "unconsumed",
             }
         }
         _unconsumed, _errs = rootcfg.update_known(cfgdict)  # noqa: F841: var never used
@@ -420,15 +434,16 @@ class TestConfigDecoratorUpdateKnown:
 
 # ***
 
+
 class TestConfigDecoratorUpdateGross:
     def test_something(self):
         rootcfg = generate_config_root()
         rootcfg.asobj.level1.level2.baz.value_from_config = (
-            'test: return ckv.value_from_config'
+            "test: return ckv.value_from_config"
         )
         cfgdict = {
-            'level1.level2.baz': 'zab',
-            'level1.unknown': 'unconsumed',
+            "level1.level2.baz": "zab",
+            "level1.unknown": "unconsumed",
         }
         # Alternatively, we can ignore unknown keys.
         rootcfg.update(cfgdict)
@@ -436,35 +451,37 @@ class TestConfigDecoratorUpdateGross:
 
 # ***
 
+
 class TestConfigDecoratorFindSettingOkay:
     def test_something(self):
         rootcfg = generate_config_root()
-        setting = rootcfg.find_setting(['level1', 'level2', 'baz'])
-        assert setting.value == 'bat'
+        setting = rootcfg.find_setting(["level1", "level2", "baz"])
+        assert setting.value == "bat"
 
 
 class TestConfigDecoratorFindSettingFailOnePart:
     def test_something(self):
         rootcfg = generate_config_root()
         with pytest.raises(KeyError):
-            rootcfg.find_setting(['unknown setting'])
+            rootcfg.find_setting(["unknown setting"])
 
 
 class TestConfigDecoratorFindSettingFailManyParts:
     def test_something(self):
         rootcfg = generate_config_root()
         with pytest.raises(KeyError):
-            rootcfg.find_setting(['unknown setting', 'foo'])
+            rootcfg.find_setting(["unknown setting", "foo"])
 
 
 class TestConfigDecoratorFindSettingOnePart:
     def test_something(self):
         rootcfg = generate_config_root()
-        setting = rootcfg.find_setting(['conflict'])
-        assert setting.value == 'level1'
+        setting = rootcfg.find_setting(["conflict"])
+        assert setting.value == "level1"
 
 
 # ***
+
 
 class TestConfigDecoratorAsobjOkay:
     def test_something(self):
@@ -477,15 +494,18 @@ class TestConfigDecoratorAsobjOkay:
 
 # ***
 
+
 class TestConfigDecoratorSettingWalk:
     def test_something(self):
         def visitor(section, setting):
             assert section is rootcfg.asobj.level1.level2._
+
         rootcfg = generate_config_root()
         rootcfg.asobj.level1.level2.baz.walk(visitor)
 
 
 # ***
+
 
 class TestConfigDecoratorSettingSetForced:
     def test_something(self):
@@ -495,6 +515,7 @@ class TestConfigDecoratorSettingSetForced:
 
 # ***
 
+
 class TestConfigDecoratorSettingSetCliarg:
     def test_something(self):
         rootcfg = generate_config_root()
@@ -502,6 +523,7 @@ class TestConfigDecoratorSettingSetCliarg:
 
 
 # ***
+
 
 class TestSectionSettingValidationOkay:
     def test_something(self):
@@ -511,54 +533,60 @@ class TestSectionSettingValidationOkay:
 
 # ***
 
+
 class TestSectionSettingChoicesOkay:
     def test_something(self):
         rootcfg = generate_config_root()
-        rootcfg.asobj.choices_test.value = 'one'
+        rootcfg.asobj.choices_test.value = "one"
 
 
 class TestSectionSettingChoicesFail:
     def test_something(self):
         rootcfg = generate_config_root()
         with pytest.raises(ValueError):
-            rootcfg.asobj.choices_test.value = 'foo'
+            rootcfg.asobj.choices_test.value = "foo"
 
 
 # ***
+
 
 class TestSectionSettingFromEnvvar:
     def test_something(self):
         rootcfg = generate_config_root()
         from config_decorator.key_chained_val import KeyChainedValue
-        KeyChainedValue._envvar_prefix = 'TEST_'
-        environame = 'TEST_LEVEL1_FOO'
+
+        KeyChainedValue._envvar_prefix = "TEST_"
+        environame = "TEST_LEVEL1_FOO"
         import os
-        os.environ[environame] = 'zab'
-        assert rootcfg.asobj.level1.foo.value == 'zab'
+
+        os.environ[environame] = "zab"
+        assert rootcfg.asobj.level1.foo.value == "zab"
         del os.environ[environame]
 
 
 # ***
 
+
 class TestSectionSettingPrecedence:
     def test_something(self):
         rootcfg = generate_config_root()
-        assert rootcfg.asobj.level1.foo.value == 'baz'
+        assert rootcfg.asobj.level1.foo.value == "baz"
         # Note that setting value assumes from config.
-        rootcfg.asobj.level1.foo.value = 'bat'
-        assert rootcfg.asobj.level1.foo.value_from_config == 'bat'
-        assert rootcfg.asobj.level1.foo.value == 'bat'
+        rootcfg.asobj.level1.foo.value = "bat"
+        assert rootcfg.asobj.level1.foo.value_from_config == "bat"
+        assert rootcfg.asobj.level1.foo.value == "bat"
         #
         from config_decorator.key_chained_val import KeyChainedValue
-        KeyChainedValue._envvar_prefix = 'TEST_'
-        environame = 'TEST_LEVEL1_FOO'
+
+        KeyChainedValue._envvar_prefix = "TEST_"
+        environame = "TEST_LEVEL1_FOO"
         import os
-        os.environ[environame] = 'zab'
-        assert rootcfg.asobj.level1.foo.value == 'zab'
+
+        os.environ[environame] = "zab"
+        assert rootcfg.asobj.level1.foo.value == "zab"
         # Note that int will be converted to setting type, which is string.
         rootcfg.asobj.level1.foo.value_from_cliarg = 123
-        assert rootcfg.asobj.level1.foo.value == '123'
+        assert rootcfg.asobj.level1.foo.value == "123"
         #
-        rootcfg.asobj.level1.foo.value_from_forced = 'perfect!'
-        assert rootcfg.asobj.level1.foo.value == 'perfect!'
-
+        rootcfg.asobj.level1.foo.value_from_forced = "perfect!"
+        assert rootcfg.asobj.level1.foo.value == "perfect!"
