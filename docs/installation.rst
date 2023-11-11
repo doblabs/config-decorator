@@ -2,6 +2,8 @@
 Installation
 ############
 
+.. vim:tw=0:ts=3:sw=3:et:norl:nospell:ft=rst
+
 .. |virtualenv| replace:: ``virtualenv``
 .. _virtualenv: https://virtualenv.pypa.io/en/latest/
 
@@ -18,21 +20,27 @@ To install user-local, simply run::
 
 To install within a |virtualenv|_, try::
 
-    $ mkvirtualenv config-decorator
+    $ cd "$(mktemp -d)"
+
+    $ python3 -m venv .venv
+
+    $ . ./.venv/bin/activate
+
     (config-decorator) $ pip install config-decorator
 
 To develop on the project, link to the source files instead::
 
     (config-decorator) $ deactivate
-    $ rmvirtualenv config-decorator
-    $ git clone git@github.com:hotoffthehamster/config-decorator.git
+    $ git clone git@github.com:doblabs/config-decorator.git
     $ cd config-decorator
-    $ mkvirtualenv -a $(pwd) --python=/usr/bin/python3.8 config-decorator
+    $ python3 -m venv config-decorator
+    $ . ./.venv/bin/activate
     (config-decorator) $ make develop
 
-After creating the virtual environment,
-to start developing from a fresh terminal, run |workon|_::
+After creating the virtual environment, it's easy to start
+developing from a fresh terminal::
 
-    $ workon config-decorator
+    $ cd config-decorator
+    $ . ./.venv/bin/activate
     (config-decorator) $ ...
 
