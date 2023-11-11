@@ -21,7 +21,7 @@ readme = "README.rst"
 #   packages = [{include = "the_package_name", from = "src"}]
 
 homepage = "https://github.com/doblabs/config-decorator"
-repository = "https://github.com/doblabs/config-decorator"
+repository = "https://github.com/doblabs/config-decorator#🎀"
 documentation = "https://config-decorator.readthedocs.io/en/latest"
 
 # REFER: https://pypi.org/classifiers/
@@ -92,10 +92,9 @@ include = [
 
 # ***
 
-[tool.easy-as-pypi]
-copyright_years = "2019-2023"
-
-[tool.git_update_faithful]
+[tool.easy_as_pypi]
+author = "Landon Bouma <https://tallybark.com/>"
+copy_years_owner = "2019-2023 Landon Bouma"
 coc_contact_email = "tallybark+doblabs -at- gmail.com"
 
 # ================================================================= #
