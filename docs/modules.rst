@@ -1,5 +1,5 @@
-config_decorator
-================
+src
+===
 
 .. toctree::
    :maxdepth: 4
