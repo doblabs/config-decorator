@@ -27,3 +27,7 @@ __all__ = (
     "ConfigDecorator",
     "KeyChainedValue",
 )
+
+# This version is substituted on poetry-build by poetry-dynamic-versioning.
+# - Consequently, __version__ remains empty when installed in 'editable' mode.
+__version__ = ""
