@@ -3,5 +3,5 @@
 # Project: https://github.com/doblabs/config-decorator#🎀
 # License: MIT
 
-MAKE_LINT_SKIP_PYDOCSTYLE ?= true
+EAPP_MAKEFILE_PYDOCSTYLE_DISABLE ?= true
 
