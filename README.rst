@@ -10,10 +10,10 @@ config-decorator User Options Framework
   :target: https://github.com/doblabs/config-decorator/actions/workflows/checks-unspecial.yml/badge.svg?branch=release
   :alt: Build Status
 
-.. CXREF: https://app.codecov.io/github.com/doblabs/config-decorator/settings/badge
+.. CXREF: https://app.codecov.io/gh/doblabs/config-decorator/settings/badge
 
-.. image:: https://codecov.io/gh/doblabs/config-decorator/branch/release/graph/badge.svg?token=AlKUyOgTGY
-  :target: https://app.codecov.io/gh/doblabs/config-decorator
+.. image:: https://codecov.io/gh/doblabs/config-decorator/graph/badge.svg?token=JRDQTDPBzG
+  :target: https://codecov.io/gh/doblabs/config-decorator
   :alt: Coverage Status
 
 .. image:: https://readthedocs.org/projects/config-decorator/badge/?version=latest
@@ -35,6 +35,9 @@ config-decorator User Options Framework
 .. image:: https://img.shields.io/github/license/doblabs/config-decorator.svg?style=flat
   :target: https://github.com/doblabs/config-decorator/blob/release/LICENSE
   :alt: License Status
+
+.. |config-decorator| replace:: ``config-decorator``
+.. _config-decorator: https://github.com/doblabs/config-decorator
 
 .. |dob| replace:: ``dob``
 .. _dob: https://github.com/tallybark/dob
