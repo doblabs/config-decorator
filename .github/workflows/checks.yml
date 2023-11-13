@@ -481,15 +481,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Use an intermediate Makefile to probe project Makefile.
-      - name: Check if project disabled this task
-        run: |
-          EAPP_MAKEFILE_RECIPE_DISABLE="$(make -f <(
-            echo -e \
-              '-include Makefile.project\nfoo:\n\t@echo $(EAPP_MAKEFILE_DOCS_DISABLE)'
-          ) foo)"
-          [ -z
-
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         id: setup-python
         uses: actions/setup-python@v4
