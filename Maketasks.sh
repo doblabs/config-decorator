@@ -33,7 +33,20 @@ make_develop () {
     # Specific to EAPP's pyproject.toml, and *many* of its followers
     # (but not all).
     install_with="--with dist,i18n,lint,test,docstyle,docs,extras"
+
+    # Add project-specific optional group.
+    install_with="$(add_with_group_if_defined "${install_with}" "project_dist")"
+    install_with="$(add_with_group_if_defined "${install_with}" "project_i18n")"
+    install_with="$(add_with_group_if_defined "${install_with}" "project_lint")"
+    install_with="$(add_with_group_if_defined "${install_with}" "project_test")"
+    install_with="$(add_with_group_if_defined "${install_with}" "project_docstyle")"
+    install_with="$(add_with_group_if_defined "${install_with}" "project_docs")"
+    install_with="$(add_with_group_if_defined "${install_with}" "project_extras")"
   fi
+
+  >&2 echo
+  >&2 echo "poetry -C ${EDITABLE_DIR} install ${install_with}"
+  >&2 echo
 
   poetry -C ${EDITABLE_DIR} install ${install_with}
 }
@@ -51,7 +64,7 @@ make_doc8_pip () {
   _venv_manage_and_activate "${VENV_DOC8}" "" "${VENV_NAME}"
 
   python -c "import doc8" 2> /dev/null \
-    || pip install -U pip doc8>="1.1.1"
+    || pip install -U pip "doc8>=1.1.1"
 
   python -m doc8 *.rst docs/
 }
@@ -114,10 +127,20 @@ make_docs_html () {
   local VENV_CREATED=false
   _venv_manage_and_activate "${VENV_DOCS}" "" "${VENV_NAME}"
 
+  # E.g., `VENV_FORCE=true make docs`.
   if ${VENV_CREATED} || ${VENV_FORCE:-false} ; then
     _venv_install_pip_setuptools_poetry_and_poetry_dynamic_versioning_plugin
 
-    poetry -C ${EDITABLE_DIR} install --with docs --extras readthedocs
+    local install_with="--with docs"
+
+    # Add project-specific optional 'project_docs' group.
+    install_with="$(add_with_group_if_defined "${install_with}" "project_docs")"
+
+    >&2 echo
+    >&2 echo "poetry -C ${EDITABLE_DIR} install ${install_with} --extras readthedocs"
+    >&2 echo
+
+    poetry -C ${EDITABLE_DIR} install ${install_with} --extras readthedocs
   fi
 
   make_docs_html_with_inject "${SOURCE_DIR}" "${PACKAGE_NAME}" "${MAKE}"
@@ -142,6 +165,27 @@ make_docs_html_make_docs () {
   PROJNAME=${PACKAGE_NAME} ${MAKE} -C docs clean
   PROJNAME=${PACKAGE_NAME} ${MAKE} -C docs html
 }
+
+# ***
+
+add_with_group_if_defined () {
+  local install_with="$1"
+  local test_group="$2"
+
+  local pyproject_path="pyproject.toml"
+
+  # - Avoid `Group(s) not found: ${test_group} (via --with)`, though
+  #   doesn't appear to kill the poetry-install, just seems sloppy.
+  if grep -q -e "^\[tool.poetry.group.${test_group}.dependencies\]\$" \
+    "${pyproject_path}" \
+  ; then
+    install_with="${install_with},${test_group}"
+  fi
+
+  printf "%s" "${install_with}"
+}
+
+# ***
 
 # USAGE: Copy `sphinx_docs_inject` to "Maketasks.local.sh" file
 #        (MAKETASKS_LOCAL_SH) and customize for your project.

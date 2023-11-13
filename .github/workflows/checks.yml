@@ -36,6 +36,43 @@ env:
 
 jobs:
 
+  # *** Project Task Disablement
+
+  disablement-detector:
+    name: Inspect Makefile.project for opt-outs
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Use an intermediate Makefile to probe project Makefile.
+      # - As mentioned above, skipping:  EAPP_MAKEFILE_LINKCHECK_DISABLE
+      - name: Check if project disabled this task
+        id: read-environs
+        run: |
+
+          for var_name in \
+            "EAPP_MAKEFILE_DOCS_DISABLE" \
+            "EAPP_MAKEFILE_PYDOCSTYLE_DISABLE" \
+          ; do
+            var_value="$(make -f <(
+              echo -e \
+                "-include Makefile.project\nprint_value:\n\t@echo \$(${var_name})"
+            ) print_value)"
+
+            environ_value=$([ -z "${var_value}" ] && echo "false" || echo "true")
+
+            echo "${var_name}=${environ_value}"
+
+            echo "${var_name}=${environ_value}" >> "${GITHUB_OUTPUT}"
+          done
+
+    outputs:
+      EAPP_MAKEFILE_DOCS_DISABLE: ${{ steps.read-environs.outputs.EAPP_MAKEFILE_DOCS_DISABLE }}
+      EAPP_MAKEFILE_PYDOCSTYLE_DISABLE: ${{ steps.read-environs.outputs.EAPP_MAKEFILE_PYDOCSTYLE_DISABLE }}
+
   # *** TEST
 
   test:
@@ -172,7 +209,7 @@ jobs:
             }}
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --with test
+        run: poetry install --no-interaction --with test,project_test
 
       - name: Test
         run: |
@@ -225,7 +262,7 @@ jobs:
           cache: 'poetry'
 
       - name: Install dependencies
-        run: poetry install --no-interaction --no-root --with lint
+        run: poetry install --no-interaction --no-root --with lint,project_lint
 
       - name: Run black
         run: poetry run black $SOURCE_DIR --check
@@ -297,7 +334,7 @@ jobs:
             }}
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root --with lint
+        run: poetry install --no-interaction --no-root --with lint,project_lint
 
       - name: Run flake8
         run: poetry run make flake8
@@ -333,7 +370,7 @@ jobs:
           cache: 'poetry'
 
       - name: Install dependencies
-        run: poetry install --no-interaction --no-root --with lint
+        run: poetry install --no-interaction --no-root --with lint,project_lint
 
       - name: Run isort
         run: poetry run make isort_check_only
@@ -432,6 +469,10 @@ jobs:
   docs:
     runs-on: ubuntu-latest
 
+    needs: disablement-detector
+
+    if: needs.disablement-detector.outputs.EAPP_MAKEFILE_DOCS_DISABLE != 'true'
+
     steps:
       - name: Fail if RUN_ONLYing another job
         run: exit 1
@@ -439,6 +480,15 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # Use an intermediate Makefile to probe project Makefile.
+      - name: Check if project disabled this task
+        run: |
+          EAPP_MAKEFILE_RECIPE_DISABLE="$(make -f <(
+            echo -e \
+              '-include Makefile.project\nfoo:\n\t@echo $(EAPP_MAKEFILE_DOCS_DISABLE)'
+          ) foo)"
+          [ -z
 
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         id: setup-python
@@ -483,7 +533,7 @@ jobs:
             }}
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --with docs --extras readthedocs
+        run: poetry install --no-interaction --with docs,project_docs --extras readthedocs
 
       - name: Docs build
         run: poetry run make _docs_html_skip_venv
@@ -544,7 +594,7 @@ jobs:
             }}
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root --with dist
+        run: poetry install --no-interaction --no-root --with dist,project_dist
 
       # Verifies bdist and sdist archives.
       - name: Dist check
@@ -608,6 +658,10 @@ jobs:
   pydocstyle:
     runs-on: ubuntu-latest
 
+    needs: disablement-detector
+
+    if: needs.disablement-detector.outputs.EAPP_MAKEFILE_PYDOCSTYLE_DISABLE != 'true'
+
     steps:
       - name: Fail if RUN_ONLYing another job
         run: exit 1
@@ -659,7 +713,7 @@ jobs:
             }}
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root --with docstyle
+        run: poetry install --no-interaction --no-root --with docstyle,project_docstyle
 
       - name: Docstring check
         run: poetry run make pydocstyle
@@ -728,7 +782,7 @@ jobs:
             }}
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --with test
+        run: poetry install --no-interaction --with test,project_test
 
       - name: Coverage compute
         run: poetry run make _coverage_xml
@@ -776,7 +830,7 @@ jobs:
           cache: 'poetry'
 
       - name: Install dependencies
-        run: poetry install --no-interaction --no-root --with lint
+        run: poetry install --no-interaction --no-root --with lint,project_lint
 
       - name: Run yamllint
         run: poetry run yamllint .
