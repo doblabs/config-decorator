@@ -45,9 +45,6 @@ config-decorator User Options Framework
 .. |nark| replace:: ``nark``
 .. _nark: https://github.com/tallybark/nark
 
-.. |config-decorator| replace:: ``config-decorator``
-.. _config-decorator: https://github.com/hotoffthehamster/config-decorator
-
 .. |ConfigObj| replace:: ``ConfigObj``
 .. _ConfigObj: https://github.com/DiffSK/configobj
 
