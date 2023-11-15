@@ -203,7 +203,12 @@ class ConfigDecorator(object):
     SEP = "."
     """Separator character used to (un)flatten section.subsection.settings paths."""
 
-    def __init__(self, cls, cls_or_name, parent=None):
+    def __init__(
+        self,
+        cls,
+        cls_or_name,
+        parent=None,
+    ):
         """Inits ConfigDecorator with decorated class, section name, and parent ref."""
         # (lb): Note that `make docs` ignores the __init__ docstring;
         # it shows the params in the class docstring, though, so the
@@ -864,7 +869,10 @@ class ConfigDecorator(object):
         :func:`section`
         for a more complete explanation.
         """
-        return section(name, parent=self)
+        return section(
+            name,
+            parent=self,
+        )
 
     def setting(self, message=None, **kwargs):
         """Method decorator used to create individual settings in a
@@ -1039,6 +1047,10 @@ def section(cls_or_name, parent=None):
             return cfg_dcor
 
         # The constructor calls _pull_kv_cache if parent is not None.
-        return ConfigDecorator(cls, cls_or_name, parent=parent)
+        return ConfigDecorator(
+            cls,
+            cls_or_name,
+            parent=parent,
+        )
 
     return _section()
