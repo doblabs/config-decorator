@@ -6,6 +6,8 @@
 
 """Class @decorator for defining exquisite settings configurations.
 
+.. _Concepts:
+
 Concepts
 --------
 
