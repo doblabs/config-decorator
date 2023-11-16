@@ -14,6 +14,8 @@ from config_decorator.key_chained_val import KeyChainedValue
 
 KeyChainedValue._envvar_prefix = "TEST_"
 
+REAL_OPTION_NAME_VALUE = "Test train-case setting and snake_case default fcn"
+
 
 def generate_config_root():
     @section(None)
@@ -66,7 +68,7 @@ def generate_config_root():
             name="real-option-name",
         )
         def real_option_name(self):
-            return ""
+            return REAL_OPTION_NAME_VALUE
 
         # ***
 
@@ -453,7 +455,17 @@ class TestConfigDecoratorUpdateGross:
         # Alternatively, we can ignore unknown keys.
         rootcfg.update(cfgdict)
 
+# ***
 
+
+class TestConfigDecoratorKeyChainedValueToStr:
+    def test_something(self):
+        rootcfg = generate_config_root()
+
+        assert (
+            str(rootcfg.asobj.real_option_name)
+            == f".real-option-name: {REAL_OPTION_NAME_VALUE}"
+        )
 # ***
 
 
