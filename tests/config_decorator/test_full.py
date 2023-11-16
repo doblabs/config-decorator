@@ -476,7 +476,7 @@ class TestConfigDecoratorUpdateKnown:
 # ***
 
 
-class TestConfigDecoratorUpdateGross:
+class TestConfigDecoratorUpdateGrossAkaUnstructured:
     def test_something(self):
         rootcfg = generate_config_root()
         rootcfg.asobj.level1.level2.baz.value_from_config = (
@@ -484,10 +484,18 @@ class TestConfigDecoratorUpdateGross:
         )
         cfgdict = {
             "level1.level2.baz": "zab",
-            "level1.unknown": "unconsumed",
+            "level1.level2.unknown": "consumed",
         }
-        # Alternatively, we can ignore unknown keys.
+
+        # Call update(), which calls update_gross(), for more coverage.
+        # - update_gross is a more inclusive update_known.
         rootcfg.update(cfgdict)
+
+        assert rootcfg.asobj.level1.level2.baz.value == "zab"
+        assert rootcfg["level1"]["level2"]["baz"] == "zab"
+        assert rootcfg.asobj.level1.level2.unknown.value == "consumed"
+        assert rootcfg["level1"]["level2"]["unknown"] == "consumed"
+
 
 # ***
 
