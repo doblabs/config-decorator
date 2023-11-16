@@ -166,9 +166,7 @@ class KeyChainedValue(object):
             return str
         # We could default to, say, str, or we could nag user to either
         # add another `elif` here, or to fix their default return value.
-        msg = _(" (Unrecognized value type: ‘{}’)").format(
-            type(default_value).__name__,
-        )
+        msg = f" ({_('Unrecognized value type')}: " f"‘{type(default_value).__name__}’)"
         raise NotImplementedError(msg)
 
     @property
@@ -233,7 +231,8 @@ class KeyChainedValue(object):
         try:
             value = self._value_type(value)
         except Exception as err:
-            raise ValueError(_(" ({})").format(str(err)))
+            # Used as 'addendum' to broader error message.
+            raise ValueError(f" ({err})")
         return value
 
     def _typify_list(self, value):
