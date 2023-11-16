@@ -500,6 +500,35 @@ class TestConfigDecoratorUpdateGrossAkaUnstructured:
 # ***
 
 
+class TestConfigDecoratorKeyChainedValueSource:
+    def test_something(self):
+        rootcfg = generate_config_root()
+        assert rootcfg.asobj.level1.foo.source == "default"
+        assert rootcfg.asobj.level1.foo.value == "baz"
+
+        cfgdict = {"level1": {"foo": "qux"}}
+        _unconsumed, _errs = rootcfg.update_known(cfgdict)  # noqa: F841: var never used
+        assert rootcfg.asobj.level1.foo.source == "config"
+        assert rootcfg.asobj.level1.foo.value == "qux"
+
+        environame = "TEST_LEVEL1_FOO"
+        os.environ[environame] = "quux"
+        assert rootcfg.asobj.level1.foo.source == "envvar"
+        assert rootcfg.asobj.level1.foo.value == "quux"
+        del os.environ[environame]
+
+        rootcfg.asobj.level1.foo.value_from_cliarg = "quuz"
+        assert rootcfg.asobj.level1.foo.source == "cliarg"
+        assert rootcfg.asobj.level1.foo.value == "quuz"
+
+        rootcfg.asobj.level1.foo.value_from_forced = "corge"
+        assert rootcfg.asobj.level1.foo.source == "forced"
+        assert rootcfg.asobj.level1.foo.value == "corge"
+
+
+# ***
+
+
 class TestConfigDecoratorKeyChainedValueToStr:
     def test_something(self):
         rootcfg = generate_config_root()
