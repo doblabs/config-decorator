@@ -463,7 +463,14 @@ class TestConfigDecoratorUpdateKnown:
                 "unknown": "unconsumed",
             }
         }
+
         _unconsumed, _errs = rootcfg.update_known(cfgdict)  # noqa: F841: var never used
+
+        assert rootcfg.asobj.level1.level2.baz.value == "zab"
+        assert rootcfg["level1"]["level2"]["baz"] == "zab"
+        with pytest.raises(AttributeError):
+            rootcfg["level1"]["unknown"]
+        assert _unconsumed["level1"]["unknown"] == "unconsumed"
 
 
 # ***
