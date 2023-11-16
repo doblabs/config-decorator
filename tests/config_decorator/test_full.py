@@ -4,10 +4,15 @@
 # License: MIT
 # Copyright © 2019-2020 Landon Bouma. All rights reserved.
 
+import os
+
 import pytest
 
 from config_decorator import section
 from config_decorator.config_decorator import ConfigDecorator
+from config_decorator.key_chained_val import KeyChainedValue
+
+KeyChainedValue._envvar_prefix = "TEST_"
 
 
 def generate_config_root():
@@ -553,12 +558,8 @@ class TestSectionSettingChoicesFail:
 class TestSectionSettingFromEnvvar:
     def test_something(self):
         rootcfg = generate_config_root()
-        from config_decorator.key_chained_val import KeyChainedValue
 
-        KeyChainedValue._envvar_prefix = "TEST_"
         environame = "TEST_LEVEL1_FOO"
-        import os
-
         os.environ[environame] = "zab"
         assert rootcfg.asobj.level1.foo.value == "zab"
         del os.environ[environame]
@@ -575,13 +576,8 @@ class TestSectionSettingPrecedence:
         rootcfg.asobj.level1.foo.value = "bat"
         assert rootcfg.asobj.level1.foo.value_from_config == "bat"
         assert rootcfg.asobj.level1.foo.value == "bat"
-        #
-        from config_decorator.key_chained_val import KeyChainedValue
 
-        KeyChainedValue._envvar_prefix = "TEST_"
         environame = "TEST_LEVEL1_FOO"
-        import os
-
         os.environ[environame] = "zab"
         assert rootcfg.asobj.level1.foo.value == "zab"
         # Note that int will be converted to setting type, which is string.
