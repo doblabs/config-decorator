@@ -109,10 +109,37 @@ def generate_config_root():
 
         @property
         @RootSection.setting(
+            "Default value bool test.",
+        )
+        def default_value_bool_test(self):
+            return True
+
+        # ***
+
+        @property
+        @RootSection.setting(
+            "Default value int test.",
+        )
+        def default_value_int_test(self):
+            return 123
+
+        # ***
+
+        @property
+        @RootSection.setting(
             "Default value list test, implicit.",
         )
         def default_value_list_test_implicit(self):
             return [1, "foo"]
+
+        # ***
+
+        @property
+        @RootSection.setting(
+            "Default value are test.",
+        )
+        def default_value_str_test(self):
+            return ""
 
         # ***
 
