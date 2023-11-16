@@ -529,6 +529,29 @@ class TestConfigDecoratorKeyChainedValueSource:
 # ***
 
 
+class TestConfigDecoratorYouveBeenWarned:
+    def test_something(self, capsys):
+        rootcfg = generate_config_root()
+        cfgdict = {"level1": {"foo": "oof"}}
+
+        _unconsumed, _errs = rootcfg.update_known(cfgdict)  # noqa: F841: var never used
+
+        KeyChainedValue._envvar_prefix = ""
+
+        assert rootcfg.asobj.level1.foo.value == "oof"
+        out, err = capsys.readouterr()
+        assert err == "WARNING: You should set KeyChainedValue._envvar_prefix\n"
+
+        assert rootcfg.asobj.level1.foo.value == "oof"
+        out, err = capsys.readouterr()
+        assert err == ""
+
+        KeyChainedValue._envvar_prefix = "TEST_"
+
+
+# ***
+
+
 class TestConfigDecoratorKeyChainedValueToStr:
     def test_something(self):
         rootcfg = generate_config_root()

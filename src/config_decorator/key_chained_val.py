@@ -463,11 +463,10 @@ class KeyChainedValue(object):
             return False
 
         if not KeyChainedValue._envvar_warned:
-            # We just warning the DEV that they didn't wire their
-            # app 100%, so don't care that this breaks the fourth
-            # wall (that is, as a library, generally not for us to
-            # emit errors to the end user, but the end user here
-            # should be the DEV during testing).
+            # Warn the DEV that they didn't wire their app 100%. This breaks
+            # the fourth wall, but don't care (that is, this is a library,
+            # and generally not for us to emit errors to the end user, but
+            # the end user here should be the DEV during testing).
             err_msg = "WARNING: You should set KeyChainedValue._envvar_prefix"
             print(err_msg, file=sys.stderr)
 
