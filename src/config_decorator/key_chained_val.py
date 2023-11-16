@@ -148,7 +148,7 @@ class KeyChainedValue(object):
             # Furthermore, the value type is implicitly whatever, because
             # the user did not specify the type of None that is the default.
             # So rather than assume, the type function is just the identity.
-            # (The user cat set value_type to be explicit about the type.
+            # (The user can set value_type to be explicit about the type.)
             return lambda val: val
         elif isinstance(default_value, bool):
             return bool

@@ -831,7 +831,9 @@ class ConfigDecorator(object):
         if objects:
             return objects[0].asobj if asobj else objects[0]
         else:
-            # DEV: This happens if you lookup an attr in config you didn't define.
+            # This happens if user looks up section or setting that wasn't
+            # defined, or, if unstructured data allowed, looks up section
+            # or setting that wasn't in source config data.
             raise error_cls(
                 _('Unknown section for {}.__getattr__(name="{}")').format(
                     self.__class__.__name__,
