@@ -256,6 +256,28 @@ def generate_config_root():
 
     # ***
 
+    @RootSection.section("train-case")
+    class RootSectionTrainCase(object):
+        def __init__(self):
+            pass
+
+        @property
+        @RootSection.setting(
+            "Test train-case/snake_case setting",
+        )
+        def foo_bar(self):
+            return "foo_bar"
+
+        @property
+        @RootSection.setting(
+            "Test train-case/snake_case setting",
+            name="baz-bat",
+        )
+        def baz_bat(self):
+            return "baz_bat"
+
+    # ***
+
     return RootSection
 
 
@@ -560,6 +582,78 @@ class TestConfigDecoratorKeyChainedValueToStr:
             str(rootcfg.asobj.real_option_name)
             == f".real-option-name: {REAL_OPTION_NAME_VALUE}"
         )
+
+
+# ***
+
+
+class TestConfigDecoratorKeyChainedValueNormalizesCase:
+    def test_something(self):
+        rootcfg = generate_config_root()
+
+        assert rootcfg["real-option-name"] == REAL_OPTION_NAME_VALUE
+
+        # Because dashes are replaced for dot-notation to work, e.g.,:
+        assert rootcfg.asobj.real_option_name.value == REAL_OPTION_NAME_VALUE
+        # You can also do similar via dict lookup:
+        assert rootcfg["real_option_name"] == REAL_OPTION_NAME_VALUE
+
+
+# ***
+
+
+class TestConfigDecoratorConfigDecoratorNormalizesCase:
+    def test_something(self):
+        rootcfg = generate_config_root()
+        assert rootcfg.asobj.train_case.foo_bar.value == "foo_bar"
+
+        cfgdict = {
+            "train-case": {
+                # Opposite cases of definitions.
+                "foo-bar": "baz",  # Defined in config above as foo_bar
+                "baz_bat": "quux",  # Defined in config above as baz-bat
+            },
+        }
+
+        _unconsumed, _errs = rootcfg.update_known(cfgdict)  # noqa: F841: var never used
+
+        assert rootcfg.asobj.train_case.foo_bar.value == "baz"
+        assert rootcfg["train-case"]["foo-bar"] == "baz"
+        assert rootcfg["train-case"]["foo_bar"] == "baz"
+
+        assert rootcfg.asobj.train_case.baz_bat.value == "quux"
+        assert rootcfg["train-case"]["baz-bat"] == "quux"
+        assert rootcfg["train-case"]["baz_bat"] == "quux"
+
+
+# ***
+
+
+class TestConfigDecoratorConfigDecoratorNormalizesConflicts:
+    def test_something(self):
+        rootcfg = generate_config_root()
+        assert rootcfg.asobj.train_case.foo_bar.value == "foo_bar"
+
+        # Note that same-name different-casing conflicts handled silently.
+        sub_cfg_1 = OrderedDict()
+        sub_cfg_1["foo-bar"] = "baz_1"
+        sub_cfg_1["foo_bar"] = "baz_2"
+        sub_cfg_2 = OrderedDict()
+        sub_cfg_2["foo-bar"] = "baz_3"
+        sub_cfg_2["foo_bar"] = "baz_4"
+        cfgdict = OrderedDict()
+        cfgdict["train-case"] = sub_cfg_1
+        cfgdict["train_case"] = sub_cfg_2
+
+        _unconsumed, _errs = rootcfg.update_known(cfgdict)  # noqa: F841: var never used
+
+        assert rootcfg.asobj.train_case.foo_bar.value == "baz_4"
+        assert rootcfg["train-case"]["foo-bar"] == "baz_4"
+        assert rootcfg["train-case"]["foo_bar"] == "baz_4"
+        assert rootcfg["train_case"]["foo-bar"] == "baz_4"
+        assert rootcfg["train_case"]["foo_bar"] == "baz_4"
+
+
 # ***
 
 

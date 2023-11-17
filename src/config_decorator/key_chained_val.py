@@ -448,10 +448,11 @@ class KeyChainedValue(object):
         if self.warn_if_no_envvar_prefix():
             raise KeyError
 
+        normal_name = self._section._normalize_name(self._name)
         environame = "{}{}_{}".format(
             KeyChainedValue._envvar_prefix,
             self._section.section_path(sep="_").upper(),
-            self._name.upper(),
+            normal_name.upper(),
         )
         envval = os.environ[environame]
         envval = self._value_conform_and_validate(envval)

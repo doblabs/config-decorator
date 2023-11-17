@@ -130,6 +130,7 @@ from functools import update_wrapper
 from gettext import gettext as _
 
 from .key_chained_val import KeyChainedValue
+from .slug_name_util import train2snakecase
 
 __all__ = (
     # So that the Sphinx docs do not generate help on the `section`
@@ -273,7 +274,8 @@ class ConfigDecorator(object):
         parent._kv_cache = OrderedDict()
         # - Register this object as a section.
         if parent is not self:
-            parent._sections[self._name] = self
+            normal_name = self._normalize_name(self._name)
+            parent._sections[normal_name] = self
 
     # ***
 
@@ -335,7 +337,8 @@ class ConfigDecorator(object):
                 return _parts
             else:
                 return sep.join(_parts)
-        _parts.insert(0, self._name)
+        normal_name = self._normalize_name(self._name)
+        _parts.insert(0, normal_name)
         return self._parent.section_path(sep, _parts)
 
     # ***
@@ -406,14 +409,16 @@ class ConfigDecorator(object):
         def _prepare_items():
             n_settings = 0
             for section, conf_dcor in self._sections.items():
-                n_settings += _recurse_section(section, conf_dcor)
+                # Use orig name, not normalized, because returning to user.
+                n_settings += _recurse_section(conf_dcor._name, conf_dcor)
             for name, ckv in self._key_vals.items():
                 if (ckv.ephemeral and not add_ephemeral) or (
                     ckv.hidden and not add_hidden
                 ):
                     continue
                 try:
-                    config[name] = choose_default_or_confval(ckv)
+                    # Use orig name, not normalized, because returning to user.
+                    config[ckv.name] = choose_default_or_confval(ckv)
                     n_settings += 1
                 except AttributeError:
                     pass
@@ -476,30 +481,40 @@ class ConfigDecorator(object):
         # unconsumed aka unstructured.
         unconsumed = {name: config[name] for name in config.keys()}
         error_messages = {}
-        for section, conf_dcor in self._sections.items():
-            if section in config:
+
+        for cfg_name, cfg_val in config.items():
+            normal_name = self._normalize_name(cfg_name)
+            if normal_name in self._sections.keys():
+                # So, do we let two same-"named" (e.g., "hear_ye", "hear-ye")
+                # config sources both update the same config value, or do we
+                # complain? For now, *We're going to allow this.*
+                conf_dcor = self._sections[normal_name]
                 unsubsumed, sub_errors = conf_dcor.update_known(
-                    config[section],
+                    config[cfg_name],
                     errors_ok=errors_ok,
                 )
                 if not unsubsumed:
-                    del unconsumed[section]
+                    del unconsumed[cfg_name]
                 else:
-                    unconsumed[section] = unsubsumed
+                    unconsumed[cfg_name] = unsubsumed
                 if sub_errors:
-                    error_messages[section] = sub_errors
-        for name, ckv in self._key_vals.items():
-            if ckv.ephemeral:
-                # Essentially unreachable, unless hacked config file.
-                continue
-            if name in config:
+                    error_messages[cfg_name] = sub_errors
+
+        for cfg_name, cfg_val in config.items():
+            normal_name = self._normalize_name(cfg_name)
+            if normal_name in self._key_vals.keys():
+                ckv = self._key_vals[normal_name]
+                if ckv.ephemeral:
+                    # Essentially unreachable, unless hacked config file.
+                    continue
                 try:
-                    ckv.value = config[name]
+                    ckv.value = config[cfg_name]
                 except ValueError as err:
                     if not errors_ok:
                         raise
-                    error_messages[name] = str(err)
-                del unconsumed[name]
+                    error_messages[cfg_name] = str(err)
+                del unconsumed[cfg_name]
+
         return unconsumed, error_messages
 
     # ***
@@ -604,14 +619,18 @@ class ConfigDecorator(object):
         def setsetting(setting_name, setting_value, *section_names):
             conf_dcor = self
             for section_name in section_names:
+                # get_section_or_create_new will normalize section_name.
                 conf_dcor = conf_dcor.get_section_or_create_new(section_name)
 
-            if setting_name in conf_dcor._key_vals:
+            setting_normal_name = self._normalize_name(setting_name)
+
+            if setting_normal_name in conf_dcor._key_vals:
                 # Unlike the method name might imply (set-DEFAULT), we don't
                 # actually set the KeyChainedValue default. We simple ensure
                 # that the setting exists. (The method is called "setdefault"
                 # to indicate its similarity to Python's ``dict.setdefault``.)
-                return conf_dcor._key_vals[setting_name]
+                return conf_dcor._key_vals[setting_normal_name]
+
             ckv = KeyChainedValue(
                 name=setting_name,
                 default_f=lambda x: "",
@@ -623,15 +642,16 @@ class ConfigDecorator(object):
             except ValueError:
                 raise
 
-            conf_dcor._key_vals[ckv.name] = ckv
+            conf_dcor._key_vals[setting_normal_name] = ckv
 
             return setting_value
 
         return _setdefault()
 
     def get_section_or_create_new(self, section_name):
+        normal_name = self._normalize_name(section_name)
         try:
-            sub_dcor = self._sections[section_name]
+            sub_dcor = self._sections[normal_name]
         except KeyError:
             # Normally created by the @section decorator,
             # but also by a setdefault, for completeness.
@@ -640,7 +660,7 @@ class ConfigDecorator(object):
             cls = object
             cls_or_name = section_name
             sub_dcor = ConfigDecorator(cls, cls_or_name, parent=self)
-            self._sections[section_name] = sub_dcor
+            self._sections[normal_name] = sub_dcor
         return sub_dcor
 
     def set_section(self, section_name, sub_dcor):
@@ -648,7 +668,8 @@ class ConfigDecorator(object):
 
         # NOTE: This method is clobbery.
         """
-        self._sections[section_name] = sub_dcor
+        normal_name = self._normalize_name(section_name)
+        self._sections[normal_name] = sub_dcor
         sub_dcor._parent = self
 
     # ***
@@ -700,7 +721,8 @@ class ConfigDecorator(object):
                 objects = [self]
             elif len(parts) == 1:
                 object_name = parts[0]
-                objects = self._find_objects_named(object_name, skip_sections)
+                obj_normal_name = self._normalize_name(object_name)
+                objects = self._find_objects_named(obj_normal_name, skip_sections)
                 # Behave same as when len(parts) > 1, and raise on missing.
                 if not objects:
                     raise KeyError(object_name)
@@ -709,18 +731,28 @@ class ConfigDecorator(object):
                 object_name = parts[-1]
 
                 conf_dcor = self
-                for name in section_names:
-                    # Raises KeyError if one of the sections not found.
-                    conf_dcor = conf_dcor._sections[name]
+                for section_name in section_names:
+                    section_normal_name = conf_dcor._normalize_name(section_name)
+                    try:
+                        conf_dcor = conf_dcor._sections[section_normal_name]
+                    except KeyError:
+                        raise KeyError(section_name)
 
+                obj_normal_name = conf_dcor._normalize_name(object_name)
                 objects = conf_dcor._find_objects_named(
-                    object_name, skip_sections, skip_depth=True
+                    obj_normal_name, skip_sections, skip_depth=True
                 )
 
             return objects
 
         return _find_objects()
 
+    def _normalize_name(self, name):
+        return train2snakecase(name)
+
+    # Note that callers are responsible for normalization, e.g.,
+    #   normal_name = self._normalize_name(name)
+    #   self._find_objects_named(normal_name)
     def _find_objects_named(self, name, skip_sections=False, skip_depth=False):
         objects = []
         if name in self._sections and not skip_sections:
@@ -782,7 +814,8 @@ class ConfigDecorator(object):
             name = name_or_keyval.name
         except AttributeError:
             name = name_or_keyval
-        del self._key_vals[name]
+        normal_name = self._normalize_name(name)
+        del self._key_vals[normal_name]
 
     def __getitem__(self, name):
         """Returns the section or setting with the given name.
@@ -827,7 +860,8 @@ class ConfigDecorator(object):
             # User looked up, e.g., config['section1.section2....key'].
             objects = self.find_all(parts)
         else:
-            objects = self._find_objects_named(name)
+            obj_name = self._normalize_name(name)
+            objects = self._find_objects_named(obj_name)
         if len(objects) > 1:
             raise error_cls(_("More than one config object named: “{}”").format(name))
         if objects:
@@ -913,7 +947,8 @@ class ConfigDecorator(object):
                 section=None,
                 **kwargs
             )
-            self._kv_cache[ckv.name] = ckv
+            normal_name = self._normalize_name(ckv.name)
+            self._kv_cache[normal_name] = ckv
 
             # EXPLAIN/2019-11-30: (lb): Why not just `return func`?
             def _decorator(*args, **kwargs):
@@ -1022,6 +1057,9 @@ def section(
 
         return cfg_dcor
 
+    def _normalize_name(name):
+        return train2snakecase(name)
+
     def _find_existing_cfg_dcor():
         cfg_dcor = None
         if parent is None or not cls_or_name:
@@ -1037,19 +1075,21 @@ def section(
                 # life harder for an end user human that will be editing the
                 # flat file config). tl;dr add section to parent.
                 cfg_dcor = parent
-        elif cls_or_name and cls_or_name in parent._sections:
-            # So that two different modules can build the same config,
-            #   e.g., in project/myfile1:
-            #     @ConfigRoot.section('shared')
-            #     class ConfigurableA(object):
-            #         ...
-            #   then in project/myfile2:
-            #     @ConfigRoot.section('shared')
-            #     class ConfigurableB(object):
-            #         ...
-            # and also for the reasons listed in the long previous comment,
-            # return the named section if previously defined.
-            cfg_dcor = parent._sections[cls_or_name]
+        elif cls_or_name and isinstance(cls_or_name, str):
+            normal_name = _normalize_name(cls_or_name)
+            if normal_name in parent._sections:
+                # So that two different modules can build the same config,
+                #   e.g., in project/myfile1:
+                #     @ConfigRoot.section('shared')
+                #     class ConfigurableA(object):
+                #         ...
+                #   then in project/myfile2:
+                #     @ConfigRoot.section('shared')
+                #     class ConfigurableB(object):
+                #         ...
+                # and also for the reasons listed in the long previous comment,
+                # return the named section if previously defined.
+                cfg_dcor = parent._sections[normal_name]
         return cfg_dcor
 
     def _use_existing_or_create(cls, cfg_dcor):
