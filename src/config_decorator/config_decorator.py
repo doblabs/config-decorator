@@ -615,13 +615,13 @@ class ConfigDecorator(object):
                 name=setting_name,
                 default_f=lambda x: "",
                 doc=_("Created by `setdefault`"),
-                section=self,
+                section=conf_dcor,
             )
             try:
                 ckv.value = setting_value
             except ValueError:
                 raise
-            self._key_vals[ckv.name] = ckv
+            conf_dcor._key_vals[ckv.name] = ckv
             return setting_value
 
         return _setdefault()
