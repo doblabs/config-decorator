@@ -5,6 +5,7 @@
 # Copyright © 2019-2020 Landon Bouma. All rights reserved.
 
 import os
+from collections import OrderedDict
 
 import pytest
 
@@ -132,6 +133,15 @@ def generate_config_root():
         def default_value_list_test_implicit(self):
             return [1, "foo"]
 
+        @property
+        @RootSection.setting(
+            "Default value list test, explicit.",
+            allow_none=True,
+            value_type=list,
+        )
+        def default_value_list_test_explicit(self):
+            return None
+
         # ***
 
         @property
@@ -252,6 +262,66 @@ def generate_config_root():
     @RootSection.section("level1.2")
     class RootSectionLevel1dot2TestsDownloadToDictDelConfigSection(object):
         def __init__(self):
+            pass
+
+    # ***
+
+    @RootSection.section("unstructured")
+    class RootSectionUnstructured(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+    # SAVVY: Dot-notation won't work here, because Python keyword, e.g.,
+    #   (Pdbr) rootcfg.asobj.unstructured.None
+    #   *** SyntaxError: invalid syntax
+    # Whereas dictionary lookup still works, e.g.,:
+    #   (Pdbr) self.rootcfg['unstructured']['None'].as_dict()
+    #   {...}
+    # Just FYI re: section names and dot-notation limitations.
+    @RootSectionUnstructured.section("None", default_value_type=None)
+    class RootSectionUnstructuredNone(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+    @RootSectionUnstructured.section("bool", default_value_type=bool)
+    class RootSectionUnstructuredBool(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+    @RootSectionUnstructured.section("int", default_value_type=int)
+    class RootSectionUnstructuredInt(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+    @RootSectionUnstructured.section("list", default_value_type=list)
+    class RootSectionUnstructuredList(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+    @RootSectionUnstructured.section("str", default_value_type=str)
+    class RootSectionUnstructuredStr(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+    @RootSectionUnstructured.section("object", default_value_type=object)
+    class RootSectionUnstructuredObject(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+    @RootSectionUnstructured.section("identity", default_value_type=lambda x: x)
+    class RootSectionUnstructuredIdentity(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+    # ***
+
+    @RootSectionUnstructured.section(
+        "boolOrNone",
+        default_value_type=bool,
+        default_allow_none=True,
+    )
+    class RootSectionUnstructuredBoolOrNone(object):
+        def __init__(self, *args, **kwargs):
             pass
 
     # ***
@@ -422,11 +492,18 @@ class TestConfigDecoratorSetAttributeValueString:
 
 
 class TestConfigDecoratorSetAttributeValueList:
-    def test_something(self):
+    def test_default_value_list_test_implicit(self):
         rootcfg = generate_config_root()
         rootcfg["default_value_list_test_implicit"] = 123
         assert rootcfg["default_value_list_test_implicit"] == [
             123,
+        ]
+
+    def test_default_value_list_test_explicit(self):
+        rootcfg = generate_config_root()
+        rootcfg["default_value_list_test_explicit"] = "abc123"
+        assert rootcfg["default_value_list_test_explicit"] == [
+            "abc123",
         ]
 
 
@@ -517,6 +594,102 @@ class TestConfigDecoratorUpdateGrossAkaUnstructured:
         assert rootcfg["level1"]["level2"]["baz"] == "zab"
         assert rootcfg.asobj.level1.level2.unknown.value == "consumed"
         assert rootcfg["level1"]["level2"]["unknown"] == "consumed"
+
+
+# ***
+
+
+class TestConfigDecoratorUnstructuredDefaultValueTypes:
+    rootcfg = generate_config_root()
+
+    def test_unstructured_default_value_type_None(self):
+        none_at_all = "None treats values as str"
+        cfgdict = {"unstructured.None.my_key_None": none_at_all}
+        self.rootcfg.update(cfgdict)
+        assert self.rootcfg["unstructured"]["None"]["my_key_None"] == none_at_all
+
+        nothing = None
+        cfgdict = {"unstructured.None.my_key_None": nothing}
+        with pytest.raises(ValueError):
+            self.rootcfg.update(cfgdict)
+
+    def test_unstructured_default_value_type_bool(self):
+        cfgdict = {"unstructured.bool.my_key_bool": "this_is_not_a_bool"}
+        with pytest.raises(ValueError):
+            self.rootcfg.update(cfgdict)
+
+        cfgdict = {"unstructured.bool.my_key_bool": "True"}
+        self.rootcfg.update(cfgdict)
+        assert self.rootcfg["unstructured"]["bool"]["my_key_bool"] is True
+
+    def test_unstructured_default_value_type_int(self):
+        cfgdict = {"unstructured.int.my_key_int": "this_is_not_a_int"}
+        with pytest.raises(ValueError):
+            self.rootcfg.update(cfgdict)
+
+        cfgdict = {"unstructured.int.my_key_int": "123"}
+        self.rootcfg.update(cfgdict)
+        assert self.rootcfg["unstructured"]["int"]["my_key_int"] == 123
+
+    def test_unstructured_default_value_type_list_single_item_int(self):
+        cfgdict = {"unstructured.list.my_key_list": 123}
+        self.rootcfg.update(cfgdict)
+        assert self.rootcfg["unstructured"]["list"]["my_key_list"] == [123]
+
+    def test_unstructured_default_value_type_list_single_item_str(self):
+        just_the_one = "this is a single item list"
+        cfgdict = {"unstructured.list.my_key_list": just_the_one}
+        self.rootcfg.update(cfgdict)
+        assert self.rootcfg["unstructured"]["list"]["my_key_list"] == [just_the_one]
+
+    def test_unstructured_default_value_type_list_actual_list(self):
+        four_on_the_floor = ["this", "list", "has four", "comma-separated items"]
+        cfgdict = {"unstructured.list.my_key_list": four_on_the_floor}
+        self.rootcfg.update(cfgdict)
+        assert self.rootcfg["unstructured"]["list"]["my_key_list"] == four_on_the_floor
+
+    def test_unstructured_default_value_type_str(self):
+        its_true = "everything's a string"
+        cfgdict = {"unstructured.str.my_key_str": its_true}
+        self.rootcfg.update(cfgdict)
+        assert self.rootcfg["unstructured"]["str"]["my_key_str"] == its_true
+
+    def test_unstructured_default_value_type_str_level2(self):
+        its_true = "everything's a string"
+        cfgdict = {"unstructured.str.level2.my_key_str_level2": its_true}
+        self.rootcfg.update(cfgdict)
+        assert (
+            self.rootcfg["unstructured"]["str"]["level2"]["my_key_str_level2"]
+            == its_true
+        )
+
+    # These 2 tests are not how people would use the class, but demonstrate
+    # its (absurd?) flexibility, also tests "unexpected" usage.
+
+    def test_unstructured_default_value_type_object(self):
+        some_obj = object()
+        cfgdict = {"unstructured.object.my_key_object": some_obj}
+        with pytest.raises(ValueError):
+            self.rootcfg.update(cfgdict)
+
+    def test_unstructured_default_value_type_object_level2(self):
+        some_obj = object()
+        cfgdict = {"unstructured.object.level2.my_key_object": some_obj}
+        self.rootcfg.update(cfgdict)
+        assert self.rootcfg["unstructured"]["object"]["level2"]["my_key_object"] == str(
+            some_obj
+        )
+
+    # Allow None, without a default_f (rare, but completes coverage).
+
+    def test_unstructured_default_value_type_bool_or_none(self):
+        cfgdict = {
+            "unstructured.boolOrNone.my_key_bool_none": None,
+            "unstructured.boolOrNone.my_key_bool_true": True,
+        }
+        self.rootcfg.update(cfgdict)
+        assert self.rootcfg["unstructured"]["boolOrNone"]["my_key_bool_none"] is None
+        assert self.rootcfg["unstructured"]["boolOrNone"]["my_key_bool_true"] is True
 
 
 # ***

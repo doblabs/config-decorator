@@ -100,7 +100,7 @@ class KeyChainedValue(object):
         """
         self._section = section
         self._name = name
-        self._default_f = default_f
+        self._default_f = self._prepare_default_f(default_f, value_type, allow_none)
         self._choices = choices
         self._doc = doc
         self._ephemeral = ephemeral
@@ -129,11 +129,41 @@ class KeyChainedValue(object):
         """Returns the default setting value."""
         return self._default_f(self._section)
 
+    def _prepare_default_f(self, default_f=None, value_type=None, allow_none=False):
+        if default_f is not None:
+            return default_f
+
+        default_val = None
+
+        # REFER: _deduce_default_type knows: None, bool, int, list, str.
+        if allow_none:
+            default_val = None
+        elif value_type is None:
+            # Means value_type wasn't specified.
+            default_val = ""
+        elif value_type is bool:
+            default_val = False
+        elif value_type is int:
+            default_val = 0
+        elif value_type is list:
+            default_val = []
+        elif value_type is str:
+            default_val = ""
+        else:
+            # Fallback is to stringify unknown type.
+            # - Though really maybe this should be an error, as it's
+            #   truly unexpected. But tolerable.
+            default_val = ""
+
+        return lambda x: default_val
+
     def _deduce_value_type(self, value_type=None):
         if value_type is not None:
             # Caller can specify, say, a function to do type conversion,
             # but they're encouraged to stick to builtin types, and to
             # use `conform` if they need to change values on input.
+            if value_type is list:
+                return self._typify_list
             return value_type
         elif self.ephemeral:
             return lambda val: val

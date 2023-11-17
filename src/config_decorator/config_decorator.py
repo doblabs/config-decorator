@@ -176,6 +176,15 @@ class ConfigDecorator(object):
         parent: A reference to the parent section
                 (a :class:`ConfigDecorator` object),
                 or ``None`` for the root section.
+        default_value_type: Default value_type for unstructured @settings
+                            (``KeyChainedValue`` objects) under this section
+                            (e.g., where the config does not define any
+                            specific key names, but it expects to read
+                            those key names from user's config).
+                            Typically used for unstructured ``list`` config.
+        default_allow_none: Default ``allow_none`` for unstructured @settings
+                            (``KeyChainedValue`` objects) under this section.
+                            Pairs well with ``default_value_type``.
 
     Attributes:
         _innercls: The class object that was decorated
@@ -209,6 +218,8 @@ class ConfigDecorator(object):
         cls,
         cls_or_name,
         parent=None,
+        default_value_type=None,
+        default_allow_none=False,
     ):
         """Inits ConfigDecorator with decorated class, section name, and parent ref."""
         # (lb): Note that `make docs` ignores the __init__ docstring;
@@ -247,6 +258,9 @@ class ConfigDecorator(object):
             self._name = cls_or_name
         else:
             self._name = cls.__name__
+
+        self._default_value_type = default_value_type
+        self._default_allow_none = default_allow_none
 
         self._pull_kv_cache(parent)
 
@@ -633,10 +647,14 @@ class ConfigDecorator(object):
 
             ckv = KeyChainedValue(
                 name=setting_name,
-                default_f=lambda x: "",
+                # Let KCV build default_f based on value_type.
+                default_f=None,
                 doc=_("Created by `setdefault`"),
                 section=conf_dcor,
+                value_type=conf_dcor._default_value_type,
+                allow_none=conf_dcor._default_allow_none,
             )
+
             try:
                 ckv.value = setting_value
             except ValueError:
@@ -883,6 +901,8 @@ class ConfigDecorator(object):
     def section(
         self,
         name,
+        default_value_type=None,
+        default_allow_none=False,
     ):
         """Class decorator used to create subsections.
 
@@ -913,6 +933,8 @@ class ConfigDecorator(object):
         return section(
             name,
             parent=self,
+            default_value_type=default_value_type,
+            default_allow_none=default_allow_none,
         )
 
     def setting(self, message=None, **kwargs):
@@ -999,6 +1021,8 @@ class ConfigDecorator(object):
 def section(
     cls_or_name,
     parent=None,
+    default_value_type=None,
+    default_allow_none=False,
 ):
     """Class decorator used to indicate the root section of a settings configuration.
 
@@ -1101,6 +1125,8 @@ def section(
             cls,
             cls_or_name,
             parent=parent,
+            default_value_type=default_value_type,
+            default_allow_none=default_allow_none,
         )
 
     return _section()
