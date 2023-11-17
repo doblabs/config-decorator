@@ -538,7 +538,7 @@ class ConfigDecorator(object):
         error_messages = {}
         for key, val in other.items():
             if isinstance(val, dict):
-                sub_errors = self.get_section(key).update_gross(
+                sub_errors = self.get_section_or_create_new(key).update_gross(
                     val, errors_ok=errors_ok
                 )
                 if sub_errors:
@@ -604,7 +604,7 @@ class ConfigDecorator(object):
         def setsetting(setting_name, setting_value, *section_names):
             conf_dcor = self
             for section_name in section_names:
-                conf_dcor = conf_dcor.get_section(section_name)
+                conf_dcor = conf_dcor.get_section_or_create_new(section_name)
 
             if setting_name in conf_dcor._key_vals:
                 # Unlike the method name might imply (set-DEFAULT), we don't
@@ -629,7 +629,7 @@ class ConfigDecorator(object):
 
         return _setdefault()
 
-    def get_section(self, section_name):
+    def get_section_or_create_new(self, section_name):
         try:
             sub_dcor = self._sections[section_name]
         except KeyError:
