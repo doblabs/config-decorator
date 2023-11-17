@@ -697,13 +697,13 @@ class ConfigDecorator(object):
 
         def _find_objects():
             if not parts:
-                return [self]
+                objects = [self]
             elif len(parts) == 1:
-                name = parts[0]
-                objects = self._find_objects_named(name, skip_sections)
+                object_name = parts[0]
+                objects = self._find_objects_named(object_name, skip_sections)
                 # Behave same as when len(parts) > 1, and raise on missing.
                 if not objects:
-                    raise KeyError(name)
+                    raise KeyError(object_name)
             else:
                 section_names = parts[:-1]
                 object_name = parts[-1]
@@ -713,17 +713,15 @@ class ConfigDecorator(object):
                     # Raises KeyError if one of the sections not found.
                     conf_dcor = conf_dcor._sections[name]
 
-                objects = []
-                if object_name in conf_dcor._sections and not skip_sections:
-                    objects.append(conf_dcor._sections[object_name])
-                if object_name in conf_dcor._key_vals:
-                    objects.append(conf_dcor._key_vals[object_name])
+                objects = conf_dcor._find_objects_named(
+                    object_name, skip_sections, skip_depth=True
+                )
 
             return objects
 
         return _find_objects()
 
-    def _find_objects_named(self, name, skip_sections=False):
+    def _find_objects_named(self, name, skip_sections=False, skip_depth=False):
         objects = []
         if name in self._sections and not skip_sections:
             # Exact section name match.
@@ -731,9 +729,10 @@ class ConfigDecorator(object):
         if name in self._key_vals:
             # Exact setting name match.
             objects.append(self._key_vals[name])
-        for section, conf_dcor in self._sections.items():
-            # Loosy breadth-first search for name.
-            objects.extend(conf_dcor._find_objects_named(name, skip_sections))
+        if not skip_depth:
+            for section, conf_dcor in self._sections.items():
+                # Loosy breadth-first search for name.
+                objects.extend(conf_dcor._find_objects_named(name, skip_sections))
         return objects
 
     def find_setting(self, parts):
