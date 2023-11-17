@@ -212,6 +212,7 @@ class KeyChainedValue(object):
             if self._value_allow_none:
                 return value
             raise ValueError(_(" (No “None” values allowed)"))
+
         if self._value_type is bool:
             if isinstance(value, bool):
                 return value

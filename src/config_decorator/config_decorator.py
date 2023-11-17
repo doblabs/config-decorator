@@ -605,6 +605,7 @@ class ConfigDecorator(object):
             conf_dcor = self
             for section_name in section_names:
                 conf_dcor = conf_dcor.get_section(section_name)
+
             if setting_name in conf_dcor._key_vals:
                 # Unlike the method name might imply (set-DEFAULT), we don't
                 # actually set the KeyChainedValue default. We simple ensure
@@ -621,7 +622,9 @@ class ConfigDecorator(object):
                 ckv.value = setting_value
             except ValueError:
                 raise
+
             conf_dcor._key_vals[ckv.name] = ckv
+
             return setting_value
 
         return _setdefault()
@@ -844,7 +847,10 @@ class ConfigDecorator(object):
     # ***
 
     # A @redecorator.
-    def section(self, name):
+    def section(
+        self,
+        name,
+    ):
         """Class decorator used to create subsections.
 
         For instance::
@@ -956,7 +962,10 @@ class ConfigDecorator(object):
 # Here we support either approach.
 
 
-def section(cls_or_name, parent=None):
+def section(
+    cls_or_name,
+    parent=None,
+):
     """Class decorator used to indicate the root section of a settings configuration.
 
     For instance::
