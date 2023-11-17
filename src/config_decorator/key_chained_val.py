@@ -223,6 +223,13 @@ class KeyChainedValue(object):
                 return False
             else:
                 raise ValueError(_(" (Expected a bool, or “True” or “False”)"))
+
+        if self._value_type is int:
+            try:
+                return int(value)
+            except ValueError:
+                raise ValueError(f" ({_('Expected an int')})")
+
         try:
             value = self._value_type(value)
         except Exception as err:
