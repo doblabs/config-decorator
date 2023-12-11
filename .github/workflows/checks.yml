@@ -441,7 +441,9 @@ jobs:
 
       # Example how to avoid hardcoding paths defined elsewhere.
       - name: Suss pseudo subproject directory name
-        run: echo "PYPROJECT_DOC8_DIR=$(echo "$(grep -e 'PYPROJECT_DOC8_DIR = ' Makefile | sed 's/^.* = //')")" >> $GITHUB_ENV
+        run: echo "PYPROJECT_DOC8_DIR=$(
+               echo "$(grep -e 'PYPROJECT_DOC8_DIR ?\?= ' Makefile | sed 's/^.* ?\?= //')"
+             )" >> $GITHUB_ENV
         shell: bash
 
       # # Prints, e.g., ".pyproject-doc8".
@@ -458,12 +460,12 @@ jobs:
       #   virtualenv: error: argument --prompt: expected one argument
       - name: Install dependencies
         # E.g.,
-        #   run: poetry install -C ".pyproject-doc8/" --no-interaction --no-root --with dev
-        run: poetry install -C "${{ env.PYPROJECT_DOC8_DIR }}" --no-interaction --no-root --with dev
+        #   run: poetry -C ".pyproject-doc8/" install --no-interaction --no-root --with dev
+        run: poetry -C "${{ env.PYPROJECT_DOC8_DIR }}" install --no-interaction --no-root --with dev
         # shell: bash
 
       - name: Run doc8
-        run: poetry run -C "${{ env.PYPROJECT_DOC8_DIR }}" python -m doc8 *.rst docs/
+        run: poetry -C "${{ env.PYPROJECT_DOC8_DIR }}" run python -m doc8 *.rst docs/
 
   # *** DOCS
 
@@ -637,7 +639,7 @@ jobs:
 
       # Verifies pyproject.toml.
       - name: Poetry check
-        run: make poetry-check
+        run: poetry run make poetry-check
 
   # *** PYDOCSTYLE
 
@@ -825,4 +827,4 @@ jobs:
         run: poetry install --no-interaction --no-root --with lint,project_lint
 
       - name: Run yamllint
-        run: poetry run yamllint .
+        run: poetry run make yamllint

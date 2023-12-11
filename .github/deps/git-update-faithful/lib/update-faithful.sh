@@ -27,6 +27,14 @@ DTRACE=false
 # DEV/YOU: Uncomment to spit trace to stderr.
 #  DTRACE=true
 
+# *** Overrideable but probably never will be
+
+UPDEPS_VENV_PREFIX="update-faithful-venv-"
+
+UPDEPS_VENV_FORCE=${UPDEPS_VENV_FORCE:-false}
+
+UPDEPS_TEMP_PREFIX="update-faithful-sh-"
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 
 source_deps () {
@@ -591,24 +599,30 @@ has_no_diff () {
   fi
 
   local local_fullpath
-
   local_fullpath="$(realpath "${local_file}")"
 
-  diff -q \
-    "${local_fullpath}" \
-    <(canon_path_show_at_canon_head "${canon_file_absolute}" "${canon_file_relative}" "${canon_head}") \
-      > /dev/null
+  local tmp_canon_copy
+  tmp_canon_copy="$(mktemp -t ${UPDEPS_TEMP_PREFIX}XXXX)"
+
+  canon_path_show_at_canon_head \
+    "${canon_file_absolute}" \
+    "${canon_file_relative}" \
+    "${canon_head}" \
+    "${tmp_canon_copy}"
+
+  diff -q "${local_fullpath}" "${tmp_canon_copy}" > /dev/null
 }
 
 canon_path_show_at_canon_head () {
   local canon_file_absolute="$1"
   local canon_file_relative="$2"
   local canon_head="$3"
+  local dest_file="$4"
 
   cd "$(dirname "${canon_file_absolute}")"
 
   # Note that git-show uses the root-relative path, regardless of curr. dir.
-  git show ${canon_head}:"${canon_file_relative}"
+  git show ${canon_head}:"${canon_file_relative}" > "${dest_file}"
 
   if [ $? -ne 0 ]; then
     >&2 error "ERROR: git-show failed:"
@@ -629,16 +643,11 @@ canon_path_show_at_canon_head () {
     #       we would have saved the error > to the file). (We'd also
     #       have to move the `exit 1` here to each of the callers.)
     >&2 warn
-    >&2 warn "- Following is the raw git-show output"
+    >&2 warn "- Following is the git-show stdout:"
     >&2 warn
-    >&2 warn "  - BWARE: Sometimes git-show works again,"
-    >&2 warn "           so we'll cap the output:"
+    >&2 cat "${dest_file}"
     >&2 warn
-    git show ${canon_head}:"${canon_file_relative}" | >&2 head -13
-    >&2 warn
-    >&2 warn "‰c."
 
-    # This kills caller, including from within process substition.
     exit 1
   fi
 
@@ -768,11 +777,11 @@ update_local_from_canon () {
 
   # ***
 
-  _stage_follower () (
+  _stage_follower () {
     local what_happn="$1"
 
     stage_follower "${local_file}" "${canon_head}" "${canon_file_absolute}" "${what_happn}"
-  )
+  }
 
   # ***
 
@@ -885,10 +894,17 @@ copy_canon_version () {
   # - It's up to the caller to remake hard-links.
   command rm -f "${local_file}"
 
+  local tmp_canon_copy
+  tmp_canon_copy="$(mktemp -t ${UPDEPS_TEMP_PREFIX}XXXX)"
+
   # Copy scoped version.
-  command cp -f \
-    <(canon_path_show_at_canon_head "${canon_file_absolute}" "${canon_file_relative}" "${canon_head}") \
-    "${local_file}"
+  canon_path_show_at_canon_head \
+    "${canon_file_absolute}" \
+    "${canon_file_relative}" \
+    "${canon_head}" \
+    "${tmp_canon_copy}"
+
+  command mv -f "${tmp_canon_copy}" "${local_file}"
 
   apply_canon_permissions_to_follower "${local_file}" "${canon_file_absolute}"
 }
@@ -899,6 +915,7 @@ apply_canon_permissions_to_follower () {
   local local_file="$1"
   local canon_file_absolute="$2"
 
+  # Copy file modes.
   command chmod --reference="${canon_file_absolute}" "${local_file}"
 }
 
@@ -998,7 +1015,9 @@ remove_faithful_file () {
   # obvious options. Forgo, refrain from, go without. Foregone, went w/out.
   local what_happn="foregone"
 
-  if [ -f "${local_file}" ]; then
+  local git_status="$(git status --porcelain=v1 -- "${local_file}")"
+
+  if [ -f "${local_file}" ] || [ "${git_status}" = " D ${local_file}" ]; then
     # This 8-letter word is easier. The file perished. Becuz we perished it.
     what_happn="perished"
 
@@ -1146,7 +1165,7 @@ render_template_localize_sources () {
     "${chosen_tmpl_path}" \
     "${canon_tmpl_relative}" \
     "${chosen_canon_head}" \
-      > "${tmp_tmpl_absolute}"
+    "${tmp_tmpl_absolute}"
 
   print_progress_info_prepared_template "${canon_tmpl_relative}"
 
@@ -1196,7 +1215,7 @@ render_template_localize_sources () {
         "${chosen_tmpl_path}" \
         "${child_tmpl_relative}" \
         "${chosen_canon_head}" \
-          > "${tmp_child_absolute}"
+        "${tmp_child_absolute}"
 
       print_progress_info_prepared_template "${child_tmpl_relative}"
     fi
@@ -1214,10 +1233,6 @@ print_progress_info_prepared_template () {
 }
 
 # ***
-
-UPDEPS_VENV_PREFIX="update-faithful-venv-"
-
-UPDEPS_VENV_FORCE=${UPDEPS_VENV_FORCE:-false}
 
 venv_activate_and_prepare () {
   local is_beginning=${1:-false}
@@ -1288,7 +1303,7 @@ venv_activate () {
 
 venv_deactivate () {
   # Aka 'off'.
-  type deactivate >/dev/null 2>&1 && deactivate
+  type deactivate >/dev/null 2>&1 && deactivate || true
 }
 
 # TRACK/2023-10-17 19:36: Using single -q so only warnings or worse printed:
@@ -1438,6 +1453,11 @@ update_faithfuls_commit_changes () {
     commit_subject="${UPDEPS_GENERIC_COMMIT_SUBJECT} <${canon_project}>"
   fi
 
+  local versiony=""
+  if command -v git-bump-version-tag > /dev/null; then
+    versiony=" [$(cd "${canon_base_absolute}" && git-bump-version-tag -c)]"
+  fi
+
   local sourcery=""
   if [ -n "${sourcerer}" ]; then
     sourcery="
@@ -1450,7 +1470,7 @@ update_faithfuls_commit_changes () {
   echo "\
 ${commit_subject}
 
-- Source: ${canon_project} @ $(git_sha_shorten "${cached_head}")
+- Source: ${canon_project} @ $(git_sha_shorten "${cached_head}")${versiony}
 
 - Commit generated by:
 

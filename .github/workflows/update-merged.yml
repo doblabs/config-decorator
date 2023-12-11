@@ -5,13 +5,18 @@
 
 ---
 
+# USYNC: This name is used by `gh workflow run`.
+# - Search for: 'Release Cascade — Version'
 name: Release Cascade — Version
 
 run-name: 👣 — Cascade — 3.) Version ${{
-  github.event_name == 'workflow_dispatch' && '(via User)' || '' }}
+  false
+  || (inputs.bump-part != '' && '(via User)')
+  || (github.event_name == 'pull_request' && '(PR closed)')
+  || (inputs.from-upstream && '(from up)')
+  || '(from the unknown)' }}
 
 on:
-
   # CXREF:
   # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#
   #          running-your-pull_request-workflow-when-a-pull-request-merges
@@ -20,25 +25,105 @@ on:
     types:
       - closed
 
+  # Via .github/workflows/update-deps.yml, when cascade-updatedeps is 'skip'.
+  workflow_call:
+    inputs:
+      # ODDLY: Note that we don't really need to specify cascade-dispatch.
+      # - It's a workflow_dispatch input to update-deps.yml, which calls
+      #   this workflow, so inputs.cascade-dispatch will always be set
+      #   (including whether or not update-deps specifies cascade-dispatch
+      #   in its `with` list).
+      #   - Note that we still need to define the `workflow_call` event
+      #     so that update-deps.yml can call this workflow, and that the
+      #     the github event is workflow_dispatch, not workflow_call.
+      # Nonetheless, we'll define cascade-dispatch here for readability.
+      cascade-dispatch:
+        type: boolean
+        default: false
+
+      cascade-updatedeps:
+        type: string
+        default: 'skip'
+
+      cascade-versioning:
+        type: string
+        default: 'skip'
+
+      # Just for the UX of it.
+      from-upstream:
+        type: boolean
+        default: false
+
   # Via GitHub Actions website button
   workflow_dispatch:
     inputs:
+      # If user wants to make a more "serious" release, they can bump major
+      # or minor part from terminal, e.g., using `git-bump-version-tag`:
+      #   https://github.com/thegittinsgood/git-bump-version-tag#🐫
+      # - SAVVY: Note that *pushing* a version tag will trigger cascade,
+      #          whereas using this workflow's workflow_dispatch will not.
+      # - OWELL: There's a slight UX disconnect here: This input, bump-part,
+      #   is used for the current repo versioning, and also for all the
+      #   downstream repo versionings, if user opts-in the cascade-dispatch.
+      #   - We could use separate buttons, one for this project (bump-part),
+      #     and one for downstream (cascade-versioning). But having two
+      #     versioning options seems more confusing than having just the
+      #     one option, especially considering how little influence we have
+      #     over the GH Actions page "Run workflow" dropdown.
       bump-part:
-        description: 'Bump part'
+        description: 'Increment version'
         type: choice
-        # It is intentional that this only lets users bump patch or alpha.
-        # It is encouraged that users push tags using `git-bump-version-tag`
-        # from their terminal rather than using this workflow_dispatch.
         options:
-          - alpha
-          - patch
-          - least
+          - 'alpha'
+          - 'patch'
+          # ISOFF: If the user is using this workflow's workflow_dispatch,
+          #        there's no reason to skip versioning.
+          #        - If user doesn't want to version this project but also
+          #          wants to start the cascade, there are other
+          #          workflow_dispatch calls they could use:
+          #            spread-updates.yml
+          #            sprout-updates.yml
+          #            update-deps.yml
+          #          In each case setting cascade-versioning to 'skip'.
+          #
+          #  - 'skip'
         default: 'alpha'
+
+      # ***
+
+      # MEH: Ideally, user will use sprout-updates.yml to start cascade.
+      # - But we'll support start-cascade here, too, mostly because
+      #   update-deps.yml *has* to include simimlar workflow_dispatch
+      #   inputs, and it's *parity over perfect*.
+
       cascade-dispatch:
-        description: 'Start the cascade!'
+        description: 'Start the cascade'
         type: boolean
         default: false
-        required: false
+
+      cascade-updatedeps:
+        description: 'Cascade poetry-update'
+        type: choice
+        options:
+          - 'full'
+          - 'ours'
+          - 'skip'
+        default: 'skip'
+
+      # ISOFF: User should assume bump-part will be used for the cascade.
+      # - Otherwise there's a disconnect in my brain trying to support
+      #   both bump-part (for the current project) and cascade-versioning
+      #   (for all the downstream projects).
+      # - If user wants to 'skip' versioning, send them to sprout-updates.yml.
+      #
+      #  cascade-versioning:
+      #    description: 'Cascade version bump'
+      #    type: choice
+      #    options:
+      #      - 'alpha'
+      #      - 'patch'
+      #      - 'skip'
+      #    default: 'skip'
 
 # ***
 
@@ -97,12 +182,59 @@ on:
 #
 #       $ jq .event.pull_request.body pull_request.json
 #       "Cascading release"
+
+# ***
+
+env:
+  # USYNC: .github/bin/update-poetry defines these strings:
+  #   UPDEPS_LABEL_NAME_UPDATE_(OURS|FULL|SKIP)=\
+  #     "ci-update-(ours|full|skip)"
+  CASCADE_UPDATEDEPS: ${{
+    false
+    || inputs.cascade-updatedeps
+    || (contains(github.event.pull_request.labels.*.name, 'ci-update-ours')
+        && 'ours')
+    || (contains(github.event.pull_request.labels.*.name, 'ci-update-full')
+        && 'full')
+    || (contains(github.event.pull_request.labels.*.name, 'ci-update-skip')
+        && 'skip')
+    || 'skip' }}
+
+  # USYNC: .github/bin/update-poetry defines these strings:
+  #   UPDEPS_LABEL_NAME_VERSION_(ALPHA|PATCH|SKIP)=\
+  #     "ci-version-(alpha|patch|skip)"
+  CASCADE_VERSIONING: ${{
+    false
+    || inputs.bump-part
+    || inputs.cascade-versioning
+    || (contains(github.event.pull_request.labels.*.name, 'ci-version-alpha')
+        && 'alpha')
+    || (contains(github.event.pull_request.labels.*.name, 'ci-version-patch')
+        && 'patch')
+    || (contains(github.event.pull_request.labels.*.name, 'ci-version-skip')
+        && 'skip')
+    || 'alpha' }}
+
+# ***
+
 jobs:
+  # `env.` doesn't work from within `with:`, so kluge it.
+  env-outputs:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "CASCADE_UPDATEDEPS: ${CASCADE_UPDATEDEPS}"
+          echo "CASCADE_VERSIONING: ${CASCADE_VERSIONING}"
+    outputs:
+      cascade-updatedeps: ${{ env.CASCADE_UPDATEDEPS }}
+      cascade-versioning: ${{ env.CASCADE_VERSIONING }}
+
+  # ***
 
   verify-merged-pr:
 
     # USYNC: UPDEPS_LABEL_NAME_POETRY_LOCK="poetry.lock"
-    if: github.event_name != 'workflow_dispatch'
+    if: github.event_name == 'pull_request'
       && github.event.pull_request.merged == true
       && contains(github.event.pull_request.labels.*.name, 'poetry.lock')
 
@@ -119,26 +251,71 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
 
       # The verify-merged-pr steps are designed to exit nonzero to fail,
-      # and then the next, bump job will check verify-merged-pr.result.
+      # and then a later job will check verify-merged-pr.result.
 
   # ***
 
-  wrangle-ci-tags:
-    name: Wrangle CI tags
+  trace:
+    name: Trace vars
+    needs: [env-outputs, verify-merged-pr]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      # yamllint disable rule:line-length
+      - run: |
+          echo "github.event_name: ${{ github.event_name }}"
+          #
+          echo "inputs.bump-part: ${{ inputs.bump-part }}"
+          echo "inputs.cascade-dispatch: ${{ inputs.cascade-dispatch }}"
+          echo "inputs.cascade-updatedeps: ${{ inputs.cascade-updatedeps }}"
+          echo "inputs.cascade-versioning: ${{ inputs.cascade-versioning }}"
+          #
+          echo "env-outputs...cascade-updatedeps: ${{ needs.env-outputs.outputs.cascade-updatedeps }}"
+          echo "env-outputs...cascade-versioning: ${{ needs.env-outputs.outputs.cascade-versioning }}"
+          #
+          echo "needs.verify-merged-pr.result: ${{ needs.verify-merged-pr.result }}"
+          #
+          echo "github.event.pull_request.labels.*.name: ${{
+            toJson(github.event.pull_request.labels.*.name) }}"
+      # yamllint enable rule:line-length
 
-    # Note that inhibit-cascade only applies if version/release not inhibited.
-    # - USYNC: UPDEPS_LABEL_NAME_INHIBIT_VERSION="ci-inhibit-version"
-    #   USYNC: UPDEPS_LABEL_NAME_INHIBIT_CASCADE="ci-inhibit-cascade"
-    if: (github.event_name == 'workflow_dispatch' && ! inputs.cascade-dispatch)
-      || (contains(github.event.pull_request.labels.*.name, 'poetry.lock')
-        && ! contains(github.event.pull_request.labels.*.name, 'ci-inhibit-version')
-        && contains(github.event.pull_request.labels.*.name, 'ci-inhibit-cascade')
-      )
+  # Temporarily set tags on HEAD pertinent to the current cascade, but
+  # only if we're going to version. After checks pass, and the release
+  # is published, and smoke-tested, we'll clear these tags, just prior
+  # to when we pass the cascade torch along.
+  wrangle-ci-tags:
+    name: Wrangle (write) CI tag(s)
+
+    needs: [env-outputs, verify-merged-pr]
+
+    # If we're not gonna bump, we don't need to write tags.
+    # SAVVY: When called via repository_dispatch from upstream project,
+    #        if cascade-updatedeps is 'skip', update-deps.yml calls us
+    #        via workflow_call, and the event is still repo-dispatch
+    #        (otherwise that cascade would enter here on a pull_request,
+    #        after poetry-update changes checked and rebase-merged).
+    #        - Note it is assumed on repository_dispatch that
+    #          cascade-dispatch is true, ci-inhibit-cascade false, etc.
+    if: ${{ ! cancelled()
+      && needs.env-outputs.outputs.cascade-versioning != 'skip'
+      && (github.event_name != 'pull_request'
+          || needs.verify-merged-pr.result == 'success') }}
 
     uses: ./.github/workflows/ci-tags-wrangle.yml
 
+    # Note we only set CI tags here, and we don't reference the outputs later.
     with:
-      inhibit-cascade: true
+      prerelease: ${{ needs.env-outputs.outputs.cascade-versioning == 'alpha' }}
+      # Manage "ci-inhibit-cascade"
+      inhibit-cascade: ${{
+        github.event_name != 'pull_request'
+        && (!inputs.cascade-dispatch)
+        || contains(github.event.pull_request.labels.*.name, 'ci-inhibit-cascade') }}
+      # LEAVE: "ci-inhibit-forever"
+      # Manage "ci-cascade-updatedeps"
+      cascade-updatedeps: ${{ needs.env-outputs.outputs.cascade-updatedeps }}
+      # Manage "ci-cascade-versioning"
+      cascade-versioning: ${{ needs.env-outputs.outputs.cascade-versioning }}
 
   # ***
 
@@ -146,25 +323,25 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    needs: [verify-merged-pr, wrangle-ci-tags]
+    needs: [env-outputs, wrangle-ci-tags]
 
-    # USYNC: UPDEPS_LABEL_NAME_INHIBIT_VERSION="ci-inhibit-version"
-    if: ${{ ! cancelled()
-      && (needs.wrangle-ci-tags.result == 'success'
-          || needs.wrangle-ci-tags.result == 'skipped')
-      && (github.event_name == 'workflow_dispatch'
-          || needs.verify-merged-pr.result == 'success'
-         )
-      && ! contains(
-        github.event.pull_request.labels.*.name, 'ci-inhibit-version'
-      ) }}
+    if: ${{ ! cancelled() && needs.wrangle-ci-tags.result == 'success' }}
 
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v4
         with:
-          # Fetch all history, so rev-parse HEAD is real HEAD,
-          # and we get tag history, so git-bump can read version.
+          # If pre-release, use alternative branch if defined.
+          ref: ${{
+            needs.env-outputs.outputs.cascade-versioning == 'alpha'
+            && vars.PRERELEASE_BRANCH
+            || github.event.repository.default_branch }}
+          # Fetch all history, so git-bump can determine largest version.
+          # - Note that fetch-tags on its own only fetches "branch" tags,
+          #   or tags accessible from HEAD (git tag -l --merged HEAD):
+          #     fetch-tags: true
+          #     fetch-depth: 1
+          # Fetch *all* tags, so git-bump can access them.
           fetch-depth: 0
           # Use user token, not default github.token, so git-push tag
           # triggers release workflow.
@@ -194,6 +371,7 @@ jobs:
       - name: Install Dunamai
         run: pipx install dunamai
 
+      # NODRY: See similar steps: ci-tags-wrangle.yml, update-merged.yml
       - name: Prepare committer
         run: |
           assert_git_email_known_ci () {
@@ -216,47 +394,79 @@ jobs:
           UPDEPS_USER_NAME: ${{ vars.UPDEPS_USER_NAME }}
           UPDEPS_USER_NAME_VERSION: ${{ vars.UPDEPS_USER_NAME_VERSION }}
 
-      - name: Bump it...
+      # If not is_bumpable, simply means the current commit
+      # is already version-tagged with a similar type (e.g.,
+      # if bump-part is 'alpha', the current commit already
+      # has a pre-release version tag; or, if bump-part is
+      # 'patch' and !is_bumpable, current commit already has
+      # a normal version tag on it).
+      # - Because we cannot add an additional version tag of
+      #   the same type to the same commit (git-bump forbids
+      #   it), we'll consider the current commit already
+      #   versioned how we want, and we'll continue the
+      #   cascade immediately.
+      - name: But do we have to...?
+        id: git-bump-check
+        run: |
+          export PATH="$(pwd)/versioner/bin:${PATH}"
+          cd ./versionee/
+          is_bumpable=true
+          printf "%s" "git bump-version-tag --check \"${BUMP_PART}\"... "
+          git bump-version-tag --check "${BUMP_PART}" \
+            || is_bumpable=false
+          echo "${is_bumpable}"
+          echo "is_bumpable=${is_bumpable}" >> $GITHUB_OUTPUT
+
+      - name: Bump it
+        if: steps.git-bump-check.outputs.is_bumpable == 'true'
         run: |
           export PATH="$(pwd)/versioner/bin:${PATH}"
           cd ./versionee/
           # By default, runs:
           #  git bump-version-tag least
+          # But we'll run `git bump alpha|patch`
           echo "git bump-version-tag \"${BUMP_PART}\""
           git bump-version-tag "${BUMP_PART}"
-        env:
-          # Uses bump-part input if workflow_dispatch;
-          # or looks for special CI label if pull_request;
-          # finally falls-back 'least' (which is bump's default).
-          # - SAVVY: If you start a normal version release cascade but then
-          #   reach a project on pre-release, this bump, because 'least',
-          #   will maintain that pre-release. And then on the next cascade
-          #   dispatch, the prerelease will propagate to the next repo.
-          #   Which seems like a good thing: If one project in the chain
-          #   is on pre-release, then everything downstream should also
-          #   be considered alpha. Alternatively, if the cascade didn't turn
-          #   prerelease on, the prerelease project wouldn't get updated
-          #   in downstream projects, but maybe upstreamer projects would.
-          #   So perhaps it'd be fine to not propagate prerelease when
-          #   encountered along the cascade -- but the CI isn't quite
-          #   plumbed for that case. Rather than update-cascade.yml use
-          #   the PRERELEASE flag passed around (based off the current
-          #   version tag), update-merged.yml would have to add a
-          #   'ci-prerelease' or 'ci-prerelease-cascade' tag to the repo,
-          #   based on the 'ci-prelease' PR label that update-deps.yml
-          #   added (based on the PRERELEASE input from update-cascade.yml).
-          #   Then update-cascade would have to read that tag.
-          #   - TL;DR: If you don't want one prerelease project to make the
-          #     rest of the cascade prerelease versions, you need to add a
-          #     new 'ci-prerelease' tag to ci-tags-wrangle.yml that will be
-          #     set in update-merged.yml (based on same-named PR label),
-          #     and that will be read in update-cascade.yml (and dispatch
-          #     to next repo's update-deps.yml).
-          #     - DEBAR: Do not change from Normal to Prerelease cascade
-          #              when cascade reaches a Prerelease project.
-          # USYNC: UPDEPS_LABEL_NAME_PRERELEASE="ci-prerelease"
-          BUMP_PART: ${{
-            inputs.bump-part
-            || (contains(github.event.pull_request.labels.*.name, 'ci-prerelease')
-                && 'alpha')
-            || 'least' }}
+
+    env:
+      # Uses bump-part input if workflow_dispatch;
+      # or looks for special CI label if pull_request;
+      # falls-back 'alpha' (which is the bump-part default).
+      BUMP_PART: ${{ inputs.bump-part
+        || needs.env-outputs.outputs.cascade-versioning }}
+
+    outputs:
+      is_bumpable: ${{ steps.git-bump-check.outputs.is_bumpable }}
+
+  # ***
+
+  # If no new version/release, continue cascade; otherwise checks-versioned.yml
+  # et al run, and cascade eventually continues from release-smoke-test.yml.
+  spread-updates:
+    name: "Cascade maybe"
+
+    uses: ./.github/workflows/spread-updates.yml
+    secrets: inherit
+
+    needs: [env-outputs, verify-merged-pr, bump-version-maybe]
+
+    # Sorta the opposite of wrangle-ci-tags's 'if' condition.
+    # SAVVY: Note this won't casade if git-bump ran but didn't change the version.
+    # USYNC: UPDEPS_LABEL_NAME_VERSION_SKIP="ci-version-skip"
+    # USYNC: UPDEPS_LABEL_NAME_INHIBIT_CASCADE="ci-inhibit-cascade"
+    if: ${{ ! cancelled()
+      && ((github.event_name == 'pull_request'
+           && needs.verify-merged-pr.result == 'success'
+           && contains(github.event.pull_request.labels.*.name, 'ci-version-skip')
+           && ! contains(github.event.pull_request.labels.*.name, 'ci-inhibit-cascade'))
+          || (github.event_name != 'pull_request'
+              && inputs.cascade-dispatch
+              && (inputs.bump-part == 'skip'
+                  || inputs.cascade-versioning == 'skip')))
+      && (needs.bump-version-maybe.result == 'skipped'
+          || (needs.bump-version-maybe.result == 'success'
+              && needs.bump-version-maybe.outputs.is_bumpable == 'false')) }}
+
+    with:
+      cascade-updatedeps: ${{ needs.env-outputs.outputs.cascade-updatedeps }}
+      cascade-versioning: ${{ needs.env-outputs.outputs.cascade-versioning }}
