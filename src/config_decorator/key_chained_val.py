@@ -383,7 +383,7 @@ class KeyChainedValue(object):
                 try:
                     _value = _conform_or_typify(_value)
                 except Exception as err:
-                    addendum = str(err)
+                    addendum = f" [{repr(err)}]"
             if addendum is not None:
                 raise ValueError(
                     _("Unrecognized value for setting ‘{}’: “{}”{}").format(
